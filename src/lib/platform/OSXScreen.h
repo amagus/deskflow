@@ -291,7 +291,7 @@ private:
   uint32_t m_activeModifierHotKey;
   KeyModifierMask m_activeModifierHotKeyMask;
   HotKeyToIDMap m_hotKeyToIDMap;
-    bool m_hotkeyWasLeftCmdDown = false;
+  bool m_hotkeyWasLeftCmdDown = false;
 
   // global hotkey operating mode
   static bool s_testedForGHOM;
