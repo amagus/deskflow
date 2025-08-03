@@ -810,7 +810,7 @@ bool OSXKeyState::mapDeskflowHotKeyToMac(
   return true;
 }
 
-void OSXKeyState::handleModifierKeys(void *target, KeyModifierMask oldMask, KeyModifierMask newMask)
+void OSXKeyState::handleModifierKeys(CGEventRef event, void *target, KeyModifierMask oldMask, KeyModifierMask newMask)
 {
   // compute changed modifiers
   KeyModifierMask changed = (oldMask ^ newMask);
@@ -823,7 +823,14 @@ void OSXKeyState::handleModifierKeys(void *target, KeyModifierMask oldMask, KeyM
     handleModifierKey(target, s_controlVK, kKeyControl_L, (newMask & KeyModifierControl) != 0, newMask);
   }
   if ((changed & KeyModifierAlt) != 0) {
-    handleModifierKey(target, s_altVK, kKeyAlt_L, (newMask & KeyModifierAlt) != 0, newMask);
+    const bool down = (newMask & KeyModifierAlt) != 0;
+    uint32_t privateModifiers = CGEventGetIntegerValueField(event, kCGKeyboardEventPrivateModifierFlags);
+    const bool isLeft = ((privateModifiers & kCgKeyboardIsLeftOption) != 0);
+    
+    // inverted on purpose : left alt/option to behave as right, and right as left
+    const KeyID keyId = isLeft ? kKeyAlt_R : kKeyAlt_L;
+
+    handleModifierKey(target, s_altVK, keyId, down, newMask);
   }
   if ((changed & KeyModifierSuper) != 0) {
     handleModifierKey(target, s_superVK, kKeySuper_L, (newMask & KeyModifierSuper) != 0, newMask);

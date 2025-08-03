@@ -16,6 +16,17 @@
 #include <set>
 #include <vector>
 
+// private api accessors to check if left or right keys are pressed
+constexpr CGEventField kCGKeyboardEventPrivateModifierFlags = static_cast<CGEventField>(59);
+constexpr uint32_t kCgKeyboardIsRightControl = 0x2000;
+constexpr uint32_t kCgKeyboardIsLeftControl = 0x1;
+constexpr uint32_t kCgKeyboardIsRightOption = 0x40;
+constexpr uint32_t kCgKeyboardIsLeftOption = 0x20;
+constexpr uint32_t kCgKeyboardIsRightCmd = 0x10;
+constexpr uint32_t kCgKeyboardIsLeftCmd = 0x8;
+constexpr uint32_t kCgKeyboardIsLeftModKey = kCgKeyboardIsLeftControl | kCgKeyboardIsLeftOption | kCgKeyboardIsLeftCmd;
+constexpr uint32_t kCgKeyboardIsRightModKey = kCgKeyboardIsRightControl | kCgKeyboardIsRightOption | kCgKeyboardIsRightCmd;
+
 class IOSXKeyResource;
 
 //! OS X key state
@@ -39,7 +50,7 @@ public:
   Determines which modifier keys have changed and updates the modifier
   state and sends key events as appropriate.
   */
-  void handleModifierKeys(void *target, KeyModifierMask oldMask, KeyModifierMask newMask);
+  void handleModifierKeys(CGEventRef event, void *target, KeyModifierMask oldMask, KeyModifierMask newMask);
 
   //@}
   //! @name accessors

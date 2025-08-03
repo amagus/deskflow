@@ -1035,12 +1035,18 @@ bool OSXScreen::onKey(CGEventRef event)
     // get old and new modifier state
     KeyModifierMask oldMask = getActiveModifiers();
     KeyModifierMask newMask = m_keyState->mapModifiersFromOSX(macMask);
-    m_keyState->handleModifierKeys(getEventTarget(), oldMask, newMask);
+    uint32_t privateModifiers = CGEventGetIntegerValueField(event, kCGKeyboardEventPrivateModifierFlags);
+    const bool isLeftCmdKeyDown = ((privateModifiers & kCgKeyboardIsLeftCmd) != 0);
+    if (isLeftCmdKeyDown) {
+      newMask |= KeyModifierControl;
+      m_hotkeyWasLeftCmdDown = true;
+    }
+    m_keyState->handleModifierKeys(event, getEventTarget(), oldMask, newMask);
 
     // if the current set of modifiers exactly matches a modifiers-only
     // hot key then generate a hot key down event.
-    if (m_activeModifierHotKey == 0) {
-      if (m_modifierHotKeys.count(newMask) > 0) {
+    if (!isLeftCmdKeyDown && m_activeModifierHotKey == 0) {
+      if (!m_modifierHotKeys.empty()) {
         m_activeModifierHotKey = m_modifierHotKeys[newMask];
         m_activeModifierHotKeyMask = newMask;
         m_events->addEvent(
@@ -1054,11 +1060,15 @@ bool OSXScreen::onKey(CGEventRef event)
     else if (m_activeModifierHotKey != 0) {
       KeyModifierMask mask = (newMask & m_activeModifierHotKeyMask);
       if (mask != m_activeModifierHotKeyMask) {
-        m_events->addEvent(
-            Event(EventTypes::PrimaryScreenHotkeyUp, getEventTarget(), HotKeyInfo::alloc(m_activeModifierHotKey))
-        );
-        m_activeModifierHotKey = 0;
-        m_activeModifierHotKeyMask = 0;
+        if (m_hotkeyWasLeftCmdDown) {
+          m_hotkeyWasLeftCmdDown = false;
+        } else {
+          m_events->addEvent(
+              Event(EventTypes::PrimaryScreenHotkeyUp, getEventTarget(), HotKeyInfo::alloc(m_activeModifierHotKey))
+          );
+          m_activeModifierHotKey = 0;
+          m_activeModifierHotKeyMask = 0;
+        }
       }
     }
 
