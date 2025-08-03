@@ -1039,6 +1039,7 @@ bool OSXScreen::onKey(CGEventRef event)
     const bool isLeftCmdKeyDown = ((privateModifiers & kCgKeyboardIsLeftCmd) != 0);
     if (isLeftCmdKeyDown) {
       newMask |= KeyModifierControl;
+      newMask &= ~KeyModifierSuper;
       m_hotkeyWasLeftCmdDown = true;
     }
     m_keyState->handleModifierKeys(event, getEventTarget(), oldMask, newMask);
