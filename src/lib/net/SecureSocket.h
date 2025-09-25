@@ -7,10 +7,9 @@
 
 #pragma once
 
-#include "io/Filesystem.h"
 #include "net/SecurityLevel.h"
+#include "net/SocketException.h"
 #include "net/TCPSocket.h"
-#include "net/XSocket.h"
 
 #include <memory>
 #include <mutex>
@@ -81,9 +80,9 @@ private:
   void disconnect();
   bool verifyCertFingerprint(const QString &FingerprintDatabasePath) const;
 
-  ISocketMultiplexerJob *serviceConnect(ISocketMultiplexerJob *, bool, bool, bool);
+  ISocketMultiplexerJob *serviceConnect(ISocketMultiplexerJob *const socket, bool, bool, bool);
 
-  ISocketMultiplexerJob *serviceAccept(ISocketMultiplexerJob *, bool, bool, bool);
+  ISocketMultiplexerJob *serviceAccept(ISocketMultiplexerJob *const socket, bool, bool, bool);
 
   void handleTCPConnected(const Event &event);
 

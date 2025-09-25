@@ -196,7 +196,6 @@ void ArgParserTests::server_unexpectedParam()
 void ArgParserTests::serverArgs()
 {
   deskflow::ServerArgs args;
-  args.m_daemon = false;
   char const *argv[] = {"deskflow", "--help", "--res-w", "888"};
 
   QVERIFY(m_parser.parseServerArgs(args, sizeof(argv) / sizeof(argv[0]), argv));
@@ -206,7 +205,6 @@ void ArgParserTests::serverArgs()
 void ArgParserTests::clientArgs()
 {
   deskflow::ClientArgs args;
-  args.m_daemon = false;
   char const *argv[] = {kAppId, "--help", "--res-w", "888", "127.0.0.1"};
 
   QVERIFY(m_parser.parseClientArgs(args, sizeof(argv) / sizeof(argv[0]), argv));
@@ -339,30 +337,6 @@ void ArgParserTests::generic_logFileWithSpace()
   QCOMPARE(i, 2);
 }
 
-void ArgParserTests::generic_foreground()
-{
-  int i = 1;
-  const int argc = 2;
-  const char *kNoDeamonCmd[argc] = {"stub", "-f"};
-
-  m_parser.parseGenericArgs(argc, kNoDeamonCmd, i);
-
-  QVERIFY(!m_parser.argsBase().m_daemon);
-  QCOMPARE(i, 1);
-}
-
-void ArgParserTests::generic_daemon()
-{
-  int i = 1;
-  const int argc = 2;
-  const char *kDeamonCmd[argc] = {"stub", "--daemon"};
-
-  m_parser.parseGenericArgs(argc, kDeamonCmd, i);
-
-  QVERIFY(m_parser.argsBase().m_daemon);
-  QCOMPARE(i, 1);
-}
-
 void ArgParserTests::generic_name()
 {
   int i = 1;
@@ -370,7 +344,7 @@ void ArgParserTests::generic_name()
   const char *kNameCmd[argc] = {"stub", "--name", "mock"};
   // Somehow cause a dump if not made here.
   ArgParser parser(nullptr);
-  deskflow::ArgsBase base;
+  static deskflow::ArgsBase base;
 
   parser.setArgsBase(base);
   parser.parseGenericArgs(argc, kNameCmd, i);

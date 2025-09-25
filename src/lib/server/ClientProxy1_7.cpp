@@ -15,14 +15,13 @@
 //
 
 ClientProxy1_7::ClientProxy1_7(const std::string &name, deskflow::IStream *stream, Server *server, IEventQueue *events)
-    : ClientProxy1_6(name, stream, server, events),
-      m_events(events)
+    : ClientProxy1_6(name, stream, server, events)
 {
   // do nothing
 }
 
 void ClientProxy1_7::secureInputNotification(const std::string &app) const
 {
-  LOG((CLOG_DEBUG2 "send secure input notification to \"%s\" %s", getName().c_str(), app.c_str()));
+  LOG_DEBUG2("send secure input notification to \"%s\" %s", getName().c_str(), app.c_str());
   ProtocolUtil::writef(getStream(), kMsgDSecureInputNotification, &app);
 }

@@ -37,6 +37,7 @@ public:
     inline static const auto InvertScrollDirection = QStringLiteral("client/invertScrollDirection");
     inline static const auto LanguageSync = QStringLiteral("client/languageSync");
     inline static const auto RemoteHost = QStringLiteral("client/remoteHost");
+    inline static const auto XdpRestoreToken = QStringLiteral("client/xdpRestoreToken");
   };
   struct Core
   {
@@ -66,6 +67,7 @@ public:
     inline static const auto LogExpanded = QStringLiteral("gui/logExpanded");
     inline static const auto SymbolicTrayIcon = QStringLiteral("gui/symbolicTrayIcon");
     inline static const auto WindowGeometry = QStringLiteral("gui/windowGeometry");
+    inline static const auto ShowGenericClientFailureDialog = QStringLiteral("gui/showGenericClientFailureDialog");
   };
   struct Log
   {
@@ -146,7 +148,11 @@ private:
 
   // clang-format off
   inline static const QStringList m_logLevels = {
-     QStringLiteral("INFO")
+      QStringLiteral("FATAL")
+    , QStringLiteral("ERROR")
+    , QStringLiteral("WARNING")
+    , QStringLiteral("NOTE")
+    , QStringLiteral("INFO")
     , QStringLiteral("DEBUG")
     , QStringLiteral("DEBUG1")
     , QStringLiteral("DEBUG2")
@@ -157,6 +163,7 @@ private:
     , Settings::Client::InvertScrollDirection
     , Settings::Client::LanguageSync
     , Settings::Client::RemoteHost
+    , Settings::Client::XdpRestoreToken
     , Settings::Core::CoreMode
     , Settings::Core::Interface
     , Settings::Core::LastVersion
@@ -179,6 +186,7 @@ private:
     , Settings::Gui::LogExpanded
     , Settings::Gui::SymbolicTrayIcon
     , Settings::Gui::WindowGeometry
+    , Settings::Gui::ShowGenericClientFailureDialog
     , Settings::Security::Certificate
     , Settings::Security::CheckPeers
     , Settings::Security::KeySize

@@ -14,13 +14,13 @@
 #include "base/TMethodJob.h"
 #include "client/ServerProxy.h"
 #include "deskflow/AppUtil.h"
+#include "deskflow/DeskflowException.h"
 #include "deskflow/IPlatformScreen.h"
 #include "deskflow/PacketStreamFilter.h"
 #include "deskflow/ProtocolTypes.h"
 #include "deskflow/ProtocolUtil.h"
 #include "deskflow/Screen.h"
 #include "deskflow/StreamChunker.h"
-#include "deskflow/XDeskflow.h"
 #include "mt/Thread.h"
 #include "net/IDataSocket.h"
 #include "net/ISocketFactory.h"
@@ -28,7 +28,6 @@
 #include "net/TCPSocket.h"
 
 #include <algorithm>
-#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -69,7 +68,7 @@ Client::Client(
         cleanupConnection();
       },
       [this](int major, int minor) {
-        sendConnectionFailedEvent(XIncompatibleClient(major, minor).what());
+        sendConnectionFailedEvent(IncompatibleClientException(major, minor).what());
         cleanupTimer();
         cleanupConnection();
       }
@@ -111,9 +110,9 @@ void Client::connect(size_t addressIndex)
     // m_serverAddress will be null if the hostname address is not reolved
     if (m_serverAddress.getAddress() != nullptr) {
       // to help users troubleshoot, show server host name (issue: 60)
-      LOG(
-          (CLOG_NOTE "connecting to '%s': %s:%i", m_serverAddress.getHostname().c_str(),
-           ARCH->addrToString(m_serverAddress.getAddress()).c_str(), m_serverAddress.getPort())
+      LOG_IPC(
+          "connecting to '%s': %s:%i", m_serverAddress.getHostname().c_str(),
+          ARCH->addrToString(m_serverAddress.getAddress()).c_str(), m_serverAddress.getPort()
       );
     }
 
@@ -125,15 +124,15 @@ void Client::connect(size_t addressIndex)
     m_stream = new PacketStreamFilter(m_events, socket, true);
 
     // connect
-    LOG((CLOG_DEBUG1 "connecting to server"));
+    LOG_DEBUG1("connecting to server");
     setupConnecting();
     setupTimer();
     socket->connect(m_serverAddress);
-  } catch (XBase &e) {
+  } catch (BaseException &e) {
     cleanupTimer();
     cleanupConnecting();
     cleanupStream();
-    LOG((CLOG_DEBUG1 "connection failed"));
+    LOG_DEBUG1("connection failed");
     sendConnectionFailedEvent(e.what());
     return;
   }
@@ -306,7 +305,7 @@ void Client::setOptions(const OptionsList &options)
       index++;
       if (index != options.end()) {
         if (!*index) {
-          LOG((CLOG_NOTE "clipboard sharing disabled by server"));
+          LOG_NOTE("clipboard sharing disabled by server");
         }
         m_enableClipboard = *index;
       }
@@ -320,8 +319,7 @@ void Client::setOptions(const OptionsList &options)
 
   if (m_enableClipboard && !m_maximumClipboardSize) {
     m_enableClipboard = false;
-    LOG((CLOG_NOTE "clipboard sharing is disabled because the server "
-                   "set the maximum clipboard size to 0"));
+    LOG_NOTE("clipboard sharing is disabled because the server set the maximum clipboard size to 0");
   }
 
   m_screen->setOptions(options);
@@ -510,7 +508,7 @@ void Client::cleanupStream()
 
 void Client::handleConnected()
 {
-  LOG((CLOG_DEBUG1 "connected, waiting for hello"));
+  LOG_DEBUG1("connected, waiting for hello");
   cleanupConnecting();
   setupConnection();
 
@@ -529,7 +527,7 @@ void Client::handleConnectionFailed(const Event &event)
   cleanupTimer();
   cleanupConnecting();
   cleanupStream();
-  LOG((CLOG_DEBUG1 "connection failed"));
+  LOG_DEBUG1("connection failed");
   sendConnectionFailedEvent(info->m_what.c_str());
   delete info;
 }
@@ -540,7 +538,7 @@ void Client::handleConnectTimeout()
   cleanupConnecting();
   cleanupConnection();
   cleanupStream();
-  LOG((CLOG_DEBUG1 "connection timed out"));
+  LOG_DEBUG1("connection timed out");
   sendConnectionFailedEvent("Timed out");
 }
 
@@ -549,7 +547,7 @@ void Client::handleOutputError()
   cleanupTimer();
   cleanupScreen();
   cleanupConnection();
-  LOG((CLOG_WARN "error sending to server"));
+  LOG_WARN("error sending to server");
   sendEvent(EventTypes::ClientDisconnected, nullptr);
 }
 
@@ -558,13 +556,13 @@ void Client::handleDisconnected()
   cleanupTimer();
   cleanupScreen();
   cleanupConnection();
-  LOG((CLOG_DEBUG1 "disconnected"));
+  LOG_DEBUG1("disconnected");
   sendEvent(EventTypes::ClientDisconnected, nullptr);
 }
 
 void Client::handleShapeChanged()
 {
-  LOG((CLOG_DEBUG "resolution changed"));
+  LOG_DEBUG("resolution changed");
   m_server->onInfoChanged();
 }
 
@@ -610,7 +608,7 @@ void Client::handleHello()
 void Client::handleSuspend()
 {
   if (!m_suspended) {
-    LOG((CLOG_INFO "suspend"));
+    LOG_INFO("suspend");
     m_suspended = true;
     bool wasConnected = isConnected();
     disconnect(nullptr);
@@ -621,7 +619,7 @@ void Client::handleSuspend()
 void Client::handleResume()
 {
   if (m_suspended) {
-    LOG((CLOG_INFO "resume"));
+    LOG_INFO("resume");
     m_suspended = false;
     if (m_connectOnResume) {
       m_connectOnResume = false;
@@ -634,15 +632,15 @@ void Client::bindNetworkInterface(IDataSocket *socket) const
 {
   try {
     if (!m_args.m_deskflowAddress.empty()) {
-      LOG((CLOG_DEBUG1 "bind to network interface: %s", m_args.m_deskflowAddress.c_str()));
+      LOG_DEBUG1("bind to network interface: %s", m_args.m_deskflowAddress.c_str());
 
       NetworkAddress bindAddress(m_args.m_deskflowAddress);
       bindAddress.resolve();
 
       socket->bind(bindAddress);
     }
-  } catch (XBase &e) {
-    LOG((CLOG_WARN "%s", e.what()));
-    LOG((CLOG_WARN "operating system will select network interface automatically"));
+  } catch (BaseException &e) {
+    LOG_WARN("%s", e.what());
+    LOG_WARN("operating system will select network interface automatically");
   }
 }

@@ -6,11 +6,12 @@
  * SPDX-License-Identifier: GPL-2.0-only WITH LicenseRef-OpenSSL-Exception
  */
 
+#include "base/Log.h" // include first Qt...
+
 #include "platform/XWindowsScreenSaver.h"
 
 #include "base/Event.h"
 #include "base/IEventQueue.h"
-#include "base/Log.h"
 #include "deskflow/IPlatformScreen.h"
 #include "platform/XWindowsUtil.h"
 
@@ -66,7 +67,7 @@ XWindowsScreenSaver::XWindowsScreenSaver(Display *display, Window window, void *
     XSelectInput(m_display, root, m_rootEventMask | SubstructureNotifyMask);
   }
   if (error) {
-    LOG((CLOG_DEBUG "didn't set root event mask"));
+    LOG_DEBUG("didn't set root event mask");
     m_rootEventMask = 0;
   }
 
@@ -132,7 +133,7 @@ bool XWindowsScreenSaver::handleXEvent(const XEvent *xevent)
   case DestroyNotify:
     if (xevent->xdestroywindow.window == m_xscreensaver) {
       // xscreensaver is gone
-      LOG((CLOG_DEBUG "xscreensaver died"));
+      LOG_DEBUG("xscreensaver died");
       setXScreenSaver(None);
       return true;
     }
@@ -289,7 +290,7 @@ bool XWindowsScreenSaver::findXScreenSaver()
 
 void XWindowsScreenSaver::setXScreenSaver(Window window)
 {
-  LOG((CLOG_DEBUG "xscreensaver window: 0x%08x", window));
+  LOG_DEBUG("xscreensaver window: 0x%08x", window);
 
   // save window
   m_xscreensaver = window;
@@ -331,7 +332,7 @@ bool XWindowsScreenSaver::isXScreenSaver(Window w) const
 void XWindowsScreenSaver::setXScreenSaverActive(bool activated)
 {
   if (m_xscreensaverActive != activated) {
-    LOG((CLOG_DEBUG "xscreensaver %s on window 0x%08x", activated ? "activated" : "deactivated", m_xscreensaver));
+    LOG_DEBUG("xscreensaver %s on window 0x%08x", activated ? "activated" : "deactivated", m_xscreensaver);
     m_xscreensaverActive = activated;
 
     // if screen saver was activated forcefully (i.e. against
@@ -363,7 +364,7 @@ void XWindowsScreenSaver::sendXScreenSaverCommand(Atom cmd, long arg1, long arg2
   event.xclient.data.l[3] = 0;
   event.xclient.data.l[4] = 0;
 
-  LOG((CLOG_DEBUG "send xscreensaver command: %d %d %d", (long)cmd, arg1, arg2));
+  LOG_DEBUG("send xscreensaver command: %d %d %d", (long)cmd, arg1, arg2);
   bool error = false;
   {
     XWindowsUtil::ErrorLock lock(m_display, &error);

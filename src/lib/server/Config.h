@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "base/BaseException.h"
 #include "base/String.h"
-#include "base/XBase.h"
 #include "deskflow/IPlatformScreen.h"
 #include "deskflow/OptionTypes.h"
 #include "deskflow/ProtocolTypes.h"
@@ -141,7 +141,7 @@ public:
   using link_const_iterator = Cell::const_iterator;
   using internal_const_iterator = CellMap::const_iterator;
   using all_const_iterator = NameMap::const_iterator;
-  class const_iterator : std::iterator_traits<Config>
+  class const_iterator : public std::iterator_traits<Config>
   {
   public:
     explicit const_iterator() = default;
@@ -416,19 +416,17 @@ public:
 
   //! Compare configurations
   bool operator==(const Config &) const;
-  //! Compare configurations
-  bool operator!=(const Config &) const;
 
   //! Read configuration
   /*!
-  Reads a configuration from a context.  Throws XConfigRead on error
+  Reads a configuration from a context.  Throws ServerConfigReadException on error
   and context is unchanged.
   */
   void read(ConfigReadContext &context);
 
   //! Read configuration
   /*!
-  Reads a configuration from a stream.  Throws XConfigRead on error.
+  Reads a configuration from a stream.  Throws ServerConfigReadException on error.
   */
   friend std::istream &operator>>(std::istream &, Config &);
 
@@ -488,7 +486,7 @@ class ConfigReadContext
 public:
   using ArgList = std::vector<std::string>;
 
-  ConfigReadContext(std::istream &, int32_t firstLine = 1);
+  explicit ConfigReadContext(std::istream &, int32_t firstLine = 1);
   ~ConfigReadContext() = default;
 
   bool readLine(std::string &);
@@ -531,15 +529,15 @@ private:
 /*!
 Thrown when a configuration stream cannot be parsed.
 */
-class XConfigRead : public XBase
+class ServerConfigReadException : public BaseException
 {
 public:
-  XConfigRead(const ConfigReadContext &context, const std::string &);
-  XConfigRead(const ConfigReadContext &context, const char *errorFmt, const std::string &arg);
-  ~XConfigRead() throw() override = default;
+  ServerConfigReadException(const ConfigReadContext &context, const std::string &);
+  ServerConfigReadException(const ConfigReadContext &context, const char *errorFmt, const std::string &arg);
+  ~ServerConfigReadException() throw() override = default;
 
 protected:
-  // XBase overrides
+  // BaseException overrides
   std::string getWhat() const throw() override;
 
 private:

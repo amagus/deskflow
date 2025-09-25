@@ -1,5 +1,6 @@
 /*
  * Deskflow -- mouse and keyboard sharing utility
+ * SPDX-FileCopyrightText: (C) 2025 Deskflow Developers
  * SPDX-FileCopyrightText: (C) 2012 - 2016 Symless Ltd.
  * SPDX-FileCopyrightText: (C) 2008 Volker Lanz <vl@fidra.de>
  * SPDX-License-Identifier: GPL-2.0-only WITH LicenseRef-OpenSSL-Exception
@@ -12,9 +13,10 @@
 
 QString Action::text() const
 {
-  auto text = QString(m_actionTypeNames.at(keySequence().isMouseButton() ? type() + 6 : type()));
+  auto text = QString(m_actionTypeNames.at(type()));
 
-  switch (type()) {
+  switch (static_cast<Action::Type>(type())) {
+    using enum Type;
   case keyDown:
   case keyUp:
   case keystroke: {
@@ -36,15 +38,15 @@ QString Action::text() const
     text.append(m_commandTemplate.arg(commandArgs));
   } break;
 
-  case switchToScreen:
+  case Type::switchToScreen:
     text.append(m_commandTemplate.arg(m_switchScreenName));
     break;
 
-  case switchInDirection:
+  case Type::switchInDirection:
     text.append(m_commandTemplate.arg(m_switchDirectionNames.at(m_switchDirection)));
     break;
 
-  case lockCursorToScreen:
+  case Type::lockCursorToScreen:
     text.append(m_commandTemplate.arg(m_lockCursorModeNames.at(m_lockCursorMode)));
     break;
 
@@ -58,7 +60,7 @@ QString Action::text() const
 void Action::loadSettings(QSettings &settings)
 {
   keySequence().loadSettings(settings);
-  setType(settings.value(SettingsKeys::ActionType, keyDown).toInt());
+  setType(settings.value(SettingsKeys::ActionType, static_cast<int>(Type::keyDown)).toInt());
 
   typeScreenNames().clear();
   int numTypeScreens = settings.beginReadArray(SettingsKeys::ScreenNames);
@@ -69,8 +71,8 @@ void Action::loadSettings(QSettings &settings)
   settings.endArray();
 
   setSwitchScreenName(settings.value(SettingsKeys::SwitchToScreen).toString());
-  setSwitchDirection(settings.value(SettingsKeys::SwitchDirection, switchLeft).toInt());
-  setLockCursorMode(settings.value(SettingsKeys::LockToScreen, lockCursorToggle).toInt());
+  setSwitchDirection(settings.value(SettingsKeys::SwitchDirection, static_cast<int>(SwitchDirection::left)).toInt());
+  setLockCursorMode(settings.value(SettingsKeys::LockToScreen, static_cast<int>(LockCursorMode::toggle)).toInt());
   setActiveOnRelease(settings.value(SettingsKeys::ActiveOnRelease, false).toBool());
   setHaveScreens(settings.value(SettingsKeys::HasScreens, false).toBool());
   setRestartServer(settings.value(SettingsKeys::RestartServer, false).toBool());
@@ -94,14 +96,6 @@ void Action::saveSettings(QSettings &settings) const
   settings.setValue(SettingsKeys::ActiveOnRelease, activeOnRelease());
   settings.setValue(SettingsKeys::HasScreens, haveScreens());
   settings.setValue(SettingsKeys::RestartServer, restartServer());
-}
-
-bool Action::operator==(const Action &a) const
-{
-  return m_keySequence == a.m_keySequence && m_type == a.m_type && m_typeScreenNames == a.m_typeScreenNames &&
-         m_switchScreenName == a.m_switchScreenName && m_switchDirection == a.m_switchDirection &&
-         m_lockCursorMode == a.m_lockCursorMode && m_activeOnRelease == a.m_activeOnRelease &&
-         m_hasScreens == a.m_hasScreens && m_restartServer == a.m_restartServer;
 }
 
 QTextStream &operator<<(QTextStream &outStream, const Action &action)

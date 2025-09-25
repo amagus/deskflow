@@ -12,14 +12,15 @@
 #include "base/IEventQueue.h"
 #include "base/Log.h"
 #include "base/Path.h"
+#include "common/ExitCodes.h"
 #include "deskflow/App.h"
 #include "deskflow/ArgParser.h"
 #include "deskflow/Screen.h"
+#include "deskflow/ScreenException.h"
 #include "deskflow/ServerArgs.h"
-#include "deskflow/XScreen.h"
+#include "net/SocketException.h"
 #include "net/SocketMultiplexer.h"
 #include "net/TCPSocketFactory.h"
-#include "net/XSocket.h"
 #include "server/ClientListener.h"
 #include "server/ClientProxy.h"
 #include "server/Config.h"
@@ -80,18 +81,18 @@ void ServerApp::parseArgs(int argc, const char *const *argv)
 
   if (!result || args().m_shouldExitOk || args().m_shouldExitFail) {
     if (args().m_shouldExitOk) {
-      m_bye(s_exitSuccess);
+      bye(s_exitSuccess);
     } else {
-      m_bye(s_exitArgs);
+      bye(s_exitArgs);
     }
   } else {
     if (!args().m_deskflowAddress.empty()) {
       try {
         *m_deskflowAddress = NetworkAddress(args().m_deskflowAddress, kDefaultPort);
         m_deskflowAddress->resolve();
-      } catch (XSocketAddress &e) {
-        LOG((CLOG_CRIT "%s: %s" BYE, args().m_pname, e.what(), args().m_pname));
-        m_bye(s_exitArgs);
+      } catch (SocketAddressException &e) {
+        LOG_CRIT("%s: %s" BYE, args().m_pname, e.what(), args().m_pname);
+        bye(s_exitArgs);
       }
     }
   }
@@ -100,8 +101,8 @@ void ServerApp::parseArgs(int argc, const char *const *argv)
 void ServerApp::help()
 {
   std::stringstream help;
-  help << "Usage: " << args().m_pname
-
+  help << "\n\nServer Mode:\n\n"
+       << "Usage: " << kAppId << "-core server"
        << " --config <pathname>"
        << " [--address <address>]"
 
@@ -109,16 +110,13 @@ void ServerApp::help()
        << " [--display <display>]"
 #endif
 
-       << s_helpSysArgs << s_helpCommonArgs << "\n"
-       << "\n"
-       << "Start the " << kAppName << " mouse/keyboard sharing server.\n"
-       << "\n"
+       << s_helpCommonArgs << "\n"
        << "  -a, --address <address>  listen for clients on the given address.\n"
        << "  -c, --config <pathname>  path of the configuration file\n"
        << s_helpGeneralArgs
        << "      --disable-client-cert-check disable client SSL certificate \n"
           "                                     checking (deprecated)\n"
-       << s_helpSysInfo << s_helpVersionArgs << "\n"
+       << s_helpVersionArgs << "\n"
 
 #if WINAPI_XWINDOWS
        << "      --display <display>  when in X mode, connect to the X server\n"
@@ -137,7 +135,7 @@ void ServerApp::help()
        << "The default is to listen on all interfaces.  The port overrides the\n"
        << "default port, " << kDefaultPort << ".\n";
 
-  LOG((CLOG_PRINT "%s", help.str().c_str()));
+  LOG_PRINT("%s", help.str().c_str());
 }
 
 void ServerApp::reloadSignalHandler(Arch::ThreadSignal, void *)
@@ -148,12 +146,12 @@ void ServerApp::reloadSignalHandler(Arch::ThreadSignal, void *)
 
 void ServerApp::reloadConfig()
 {
-  LOG((CLOG_DEBUG "reload configuration"));
+  LOG_DEBUG("reload configuration");
   if (loadConfig(args().m_configFile)) {
     if (m_server != nullptr) {
       m_server->setConfig(*args().m_config);
     }
-    LOG((CLOG_NOTE "reloaded configuration"));
+    LOG_NOTE("reloaded configuration");
   }
 }
 
@@ -161,13 +159,13 @@ void ServerApp::loadConfig()
 {
   const auto path = args().m_configFile;
   if (path.empty()) {
-    LOG((CLOG_CRIT "no configuration path provided"));
-    m_bye(s_exitConfig);
+    LOG_CRIT("no configuration path provided");
+    bye(s_exitConfig);
   }
 
   if (!loadConfig(path)) {
-    LOG((CLOG_CRIT "%s: failed to load config: %s", args().m_pname, path.c_str()));
-    m_bye(s_exitConfig);
+    LOG_CRIT("%s: failed to load config: %s", args().m_pname, path.c_str());
+    bye(s_exitConfig);
   }
 }
 
@@ -175,18 +173,18 @@ bool ServerApp::loadConfig(const std::string &pathname)
 {
   try {
     // load configuration
-    LOG((CLOG_DEBUG "opening configuration \"%s\"", pathname.c_str()));
+    LOG_DEBUG("opening configuration \"%s\"", pathname.c_str());
     std::ifstream configStream(deskflow::filesystem::path(pathname));
     if (!configStream.is_open()) {
-      LOG((CLOG_ERR "cannot open configuration \"%s\"", pathname.c_str()));
+      LOG_ERR("cannot open configuration \"%s\"", pathname.c_str());
       return false;
     }
     configStream >> *args().m_config;
-    LOG((CLOG_DEBUG "configuration read successfully"));
+    LOG_DEBUG("configuration read successfully");
     return true;
-  } catch (XConfigRead &e) {
+  } catch (ServerConfigReadException &e) {
     // report error in configuration file
-    LOG((CLOG_ERR "cannot read configuration \"%s\": %s", pathname.c_str(), e.what()));
+    LOG_ERR("cannot read configuration \"%s\": %s", pathname.c_str(), e.what());
   }
   return false;
 }
@@ -203,7 +201,6 @@ void ServerApp::handleClientConnected(const Event &, ClientListener *listener)
   ClientProxy *client = listener->getNextClient();
   if (client != nullptr) {
     m_server->adoptClient(client);
-    updateStatus();
   }
 }
 
@@ -218,17 +215,19 @@ void ServerApp::closeServer(Server *server)
 
   // wait for clients to disconnect for up to timeout seconds
   double timeout = 3.0;
-  EventQueueTimer *timer = m_events->newOneShotTimer(timeout, nullptr);
-  m_events->addHandler(EventTypes::Timer, timer, [this](const auto &) { m_events->addEvent(Event(EventTypes::Quit)); });
-  m_events->addHandler(EventTypes::ServerDisconnected, server, [this](const auto &) {
-    m_events->addEvent(Event(EventTypes::Quit));
+  EventQueueTimer *timer = getEvents()->newOneShotTimer(timeout, nullptr);
+  getEvents()->addHandler(EventTypes::Timer, timer, [this](const auto &) {
+    getEvents()->addEvent(Event(EventTypes::Quit));
+  });
+  getEvents()->addHandler(EventTypes::ServerDisconnected, server, [this](const auto &) {
+    getEvents()->addEvent(Event(EventTypes::Quit));
   });
 
-  m_events->loop();
+  getEvents()->loop();
 
-  m_events->removeHandler(EventTypes::Timer, timer);
-  m_events->deleteTimer(timer);
-  m_events->removeHandler(EventTypes::ServerDisconnected, server);
+  getEvents()->removeHandler(EventTypes::Timer, timer);
+  getEvents()->deleteTimer(timer);
+  getEvents()->removeHandler(EventTypes::ServerDisconnected, server);
 
   // done with server
   delete server;
@@ -237,26 +236,16 @@ void ServerApp::closeServer(Server *server)
 void ServerApp::stopRetryTimer()
 {
   if (m_timer != nullptr) {
-    m_events->removeHandler(EventTypes::Timer, m_timer);
-    m_events->deleteTimer(m_timer);
+    getEvents()->removeHandler(EventTypes::Timer, m_timer);
+    getEvents()->deleteTimer(m_timer);
     m_timer = nullptr;
   }
-}
-
-void ServerApp::updateStatus() const
-{
-  updateStatus("");
-}
-
-void ServerApp::updateStatus(const std::string_view &msg) const
-{
-  // do nothing
 }
 
 void ServerApp::closeClientListener(ClientListener *listen)
 {
   if (listen != nullptr) {
-    m_events->removeHandler(EventTypes::ClientListenerAccepted, listen);
+    getEvents()->removeHandler(EventTypes::ClientListenerAccepted, listen);
     delete listen;
   }
 }
@@ -287,9 +276,9 @@ void ServerApp::closeServerScreen(deskflow::Screen *screen)
 {
   if (screen != nullptr) {
     using enum EventTypes;
-    m_events->removeHandler(ScreenError, screen->getEventTarget());
-    m_events->removeHandler(ScreenSuspend, screen->getEventTarget());
-    m_events->removeHandler(ScreenResume, screen->getEventTarget());
+    getEvents()->removeHandler(ScreenError, screen->getEventTarget());
+    getEvents()->removeHandler(ScreenSuspend, screen->getEventTarget());
+    getEvents()->removeHandler(ScreenResume, screen->getEventTarget());
     delete screen;
   }
 }
@@ -329,31 +318,31 @@ void ServerApp::retryHandler()
     break;
 
   case Initializing:
-    LOG((CLOG_DEBUG1 "retry server initialization"));
+    LOG_DEBUG1("retry server initialization");
     m_serverState = Uninitialized;
     if (!initServer()) {
-      m_events->addEvent(Event(EventTypes::Quit));
+      getEvents()->addEvent(Event(EventTypes::Quit));
     }
     break;
 
   case InitializingToStart:
-    LOG((CLOG_DEBUG1 "retry server initialization"));
+    LOG_DEBUG1("retry server initialization");
     m_serverState = Uninitialized;
     if (!initServer()) {
-      m_events->addEvent(Event(EventTypes::Quit));
+      getEvents()->addEvent(Event(EventTypes::Quit));
     } else if (m_serverState == Initialized) {
-      LOG((CLOG_DEBUG1 "starting server"));
+      LOG_DEBUG1("starting server");
       if (!startServer()) {
-        m_events->addEvent(Event(EventTypes::Quit));
+        getEvents()->addEvent(Event(EventTypes::Quit));
       }
     }
     break;
 
   case Starting:
-    LOG((CLOG_DEBUG1 "retry starting server"));
+    LOG_DEBUG1("retry starting server");
     m_serverState = Initialized;
     if (!startServer()) {
-      m_events->addEvent(Event(EventTypes::Quit));
+      getEvents()->addEvent(Event(EventTypes::Quit));
     }
     break;
   }
@@ -377,21 +366,19 @@ bool ServerApp::initServer()
     m_serverScreen = serverScreen;
     m_primaryClient = primaryClient;
     m_serverState = Initialized;
-    updateStatus();
     return true;
-  } catch (XScreenUnavailable &e) {
-    LOG((CLOG_WARN "primary screen unavailable: %s", e.what()));
+  } catch (ScreenUnavailableException &e) {
+    LOG_WARN("primary screen unavailable: %s", e.what());
     closePrimaryClient(primaryClient);
     closeServerScreen(serverScreen);
-    updateStatus(std::string("primary screen unavailable: ") + e.what());
     retryTime = e.getRetryTime();
-  } catch (XScreenOpenFailure &e) {
-    LOG((CLOG_CRIT "failed to start server: %s", e.what()));
+  } catch (ScreenOpenFailureException &e) {
+    LOG_CRIT("failed to start server: %s", e.what());
     closePrimaryClient(primaryClient);
     closeServerScreen(serverScreen);
     return false;
-  } catch (XBase &e) {
-    LOG((CLOG_CRIT "failed to start server: %s", e.what()));
+  } catch (BaseException &e) {
+    LOG_CRIT("failed to start server: %s", e.what());
     closePrimaryClient(primaryClient);
     closeServerScreen(serverScreen);
     return false;
@@ -400,9 +387,9 @@ bool ServerApp::initServer()
   if (args().m_restartable) {
     // install a timer and handler to retry later
     assert(m_timer == nullptr);
-    LOG((CLOG_DEBUG "retry in %.0f seconds", retryTime));
-    m_timer = m_events->newOneShotTimer(retryTime, nullptr);
-    m_events->addHandler(EventTypes::Timer, m_timer, [this](const auto &) { retryHandler(); });
+    LOG_DEBUG("retry in %.0f seconds", retryTime);
+    m_timer = getEvents()->newOneShotTimer(retryTime, nullptr);
+    getEvents()->addHandler(EventTypes::Timer, m_timer, [this](const auto &) { retryHandler(); });
     m_serverState = Initializing;
     return true;
   } else {
@@ -414,11 +401,13 @@ bool ServerApp::initServer()
 deskflow::Screen *ServerApp::openServerScreen()
 {
   deskflow::Screen *screen = createScreen();
-  m_events->addHandler(EventTypes::ScreenError, screen->getEventTarget(), [this](const auto &) {
+  getEvents()->addHandler(EventTypes::ScreenError, screen->getEventTarget(), [this](const auto &) {
     handleScreenError();
   });
-  m_events->addHandler(EventTypes::ScreenSuspend, screen->getEventTarget(), [this](const auto &) { handleSuspend(); });
-  m_events->addHandler(EventTypes::ScreenResume, screen->getEventTarget(), [this](const auto &) { handleResume(); });
+  getEvents()->addHandler(EventTypes::ScreenSuspend, screen->getEventTarget(), [this](const auto &) {
+    handleSuspend();
+  });
+  getEvents()->addHandler(EventTypes::ScreenResume, screen->getEventTarget(), [this](const auto &) { handleResume(); });
   return screen;
 }
 
@@ -451,20 +440,18 @@ bool ServerApp::startServer()
     listener->setServer(m_server);
     m_server->setListener(listener);
     m_listener = listener;
-    updateStatus();
-    LOG((CLOG_NOTE "started server, waiting for clients"));
+    LOG_IPC("started server, waiting for clients");
     m_serverState = Started;
     return true;
-  } catch (XSocketAddressInUse &e) {
+  } catch (SocketAddressInUseException &e) {
     if (args().m_restartable) {
-      LOG((CLOG_ERR "cannot listen for clients: %s", e.what()));
+      LOG_ERR("cannot listen for clients: %s", e.what());
     } else {
-      LOG((CLOG_CRIT "cannot listen for clients: %s", e.what()));
+      LOG_CRIT("cannot listen for clients: %s", e.what());
     }
     closeClientListener(listener);
-    updateStatus(std::string("cannot listen for clients: ") + e.what());
-  } catch (XBase &e) {
-    LOG((CLOG_CRIT "failed to start server: %s", e.what()));
+  } catch (BaseException &e) {
+    LOG_CRIT("failed to start server: %s", e.what());
     closeClientListener(listener);
     return false;
   }
@@ -473,9 +460,9 @@ bool ServerApp::startServer()
     // install a timer and handler to retry later
     assert(m_timer == nullptr);
     const auto retryTime = 10.0;
-    LOG((CLOG_DEBUG "retry in %.0f seconds", retryTime));
-    m_timer = m_events->newOneShotTimer(retryTime, nullptr);
-    m_events->addHandler(EventTypes::Timer, m_timer, [this](const auto &) { retryHandler(); });
+    LOG_DEBUG("retry in %.0f seconds", retryTime);
+    m_timer = getEvents()->newOneShotTimer(retryTime, nullptr);
+    getEvents()->addHandler(EventTypes::Timer, m_timer, [this](const auto &) { retryHandler(); });
     m_serverState = Starting;
     return true;
   } else {
@@ -487,14 +474,14 @@ bool ServerApp::startServer()
 deskflow::Screen *ServerApp::createScreen()
 {
 #if WINAPI_MSWINDOWS
-  return new deskflow::Screen(new MSWindowsScreen(true, args().m_noHooks, m_events), m_events);
+  return new deskflow::Screen(new MSWindowsScreen(true, args().m_noHooks, getEvents()), getEvents());
 #endif
 
 #if defined(WINAPI_XWINDOWS) or defined(WINAPI_LIBEI)
   if (deskflow::platform::isWayland()) {
 #if WINAPI_LIBEI
-    LOG((CLOG_INFO "using ei screen for wayland"));
-    return new deskflow::Screen(new deskflow::EiScreen(true, m_events, true), m_events);
+    LOG_INFO("using ei screen for wayland");
+    return new deskflow::Screen(new deskflow::EiScreen(true, getEvents(), true), getEvents());
 #else
     throw XNoEiSupport();
 #endif
@@ -502,29 +489,23 @@ deskflow::Screen *ServerApp::createScreen()
 #endif
 
 #if WINAPI_XWINDOWS
-  LOG((CLOG_INFO "using legacy x windows screen"));
-  return new deskflow::Screen(new XWindowsScreen(args().m_display, true, 0, m_events), m_events);
+  LOG_INFO("using legacy x windows screen");
+  return new deskflow::Screen(new XWindowsScreen(args().m_display, true, 0, getEvents()), getEvents());
 #elif WINAPI_CARBON
-  return new deskflow::Screen(new OSXScreen(m_events, true), m_events);
+  return new deskflow::Screen(new OSXScreen(getEvents(), true), getEvents());
 #endif
 }
 
 PrimaryClient *ServerApp::openPrimaryClient(const std::string &name, deskflow::Screen *screen)
 {
-  LOG((CLOG_DEBUG1 "creating primary screen"));
+  LOG_DEBUG1("creating primary screen");
   return new PrimaryClient(name, screen);
-}
-
-void ServerApp::handleScreenError()
-{
-  LOG((CLOG_CRIT "error on screen"));
-  m_events->addEvent(Event(EventTypes::Quit));
 }
 
 void ServerApp::handleSuspend()
 {
   if (!m_suspended) {
-    LOG((CLOG_INFO "suspend"));
+    LOG_INFO("suspend");
     stopServer();
     m_suspended = true;
   }
@@ -533,7 +514,7 @@ void ServerApp::handleSuspend()
 void ServerApp::handleResume()
 {
   if (m_suspended) {
-    LOG((CLOG_INFO "resume"));
+    LOG_INFO("resume");
     startServer();
     m_suspended = false;
   }
@@ -551,9 +532,9 @@ ClientListener *ServerApp::openClientListener(const NetworkAddress &address)
     }
   }
 
-  auto *listen = new ClientListener(getAddress(address), getSocketFactory(), m_events, securityLevel);
+  auto *listen = new ClientListener(getAddress(address), getSocketFactory(), getEvents(), securityLevel);
 
-  m_events->addHandler(EventTypes::ClientListenerAccepted, listen, [this, listen](const auto &e) {
+  getEvents()->addHandler(EventTypes::ClientListenerAccepted, listen, [this, listen](const auto &e) {
     handleClientConnected(e, listen);
   });
 
@@ -562,10 +543,9 @@ ClientListener *ServerApp::openClientListener(const NetworkAddress &address)
 
 Server *ServerApp::openServer(ServerConfig &config, PrimaryClient *primaryClient)
 {
-  auto *server = new Server(config, primaryClient, m_serverScreen, m_events, args());
+  auto *server = new Server(config, primaryClient, m_serverScreen, getEvents(), args());
   try {
-    m_events->addHandler(EventTypes::ServerDisconnected, server, [this](const auto &) { updateStatus(); });
-    m_events->addHandler(EventTypes::ServerScreenSwitched, server, [this](const auto &) { handleScreenSwitched(); });
+    getEvents()->addHandler(EventTypes::ServerScreenSwitched, server, [this](const auto &) { handleScreenSwitched(); });
 
   } catch (std::bad_alloc &ba) {
     delete server;
@@ -582,7 +562,7 @@ void ServerApp::handleScreenSwitched() const
 
 std::unique_ptr<ISocketFactory> ServerApp::getSocketFactory() const
 {
-  return std::make_unique<TCPSocketFactory>(m_events, getSocketMultiplexer());
+  return std::make_unique<TCPSocketFactory>(getEvents(), getSocketMultiplexer());
 }
 
 NetworkAddress ServerApp::getAddress(const NetworkAddress &address) const
@@ -613,7 +593,7 @@ int ServerApp::mainLoop()
 
   // canonicalize the primary screen name
   if (std::string primaryName = args().m_config->getCanonicalName(args().m_name); primaryName.empty()) {
-    LOG((CLOG_CRIT "unknown screen name `%s'", args().m_name.c_str()));
+    LOG_CRIT("unknown screen name `%s'", args().m_name.c_str());
     return s_exitFailed;
   }
 
@@ -622,19 +602,19 @@ int ServerApp::mainLoop()
 
   // handle hangup signal by reloading the server's configuration
   ARCH->setSignalHandler(Arch::ThreadSignal::Hangup, &reloadSignalHandler, nullptr);
-  m_events->addHandler(EventTypes::ServerAppReloadConfig, m_events->getSystemTarget(), [this](const auto &) {
+  getEvents()->addHandler(EventTypes::ServerAppReloadConfig, getEvents()->getSystemTarget(), [this](const auto &) {
     reloadConfig();
   });
 
   // handle force reconnect event by disconnecting clients.  they'll
   // reconnect automatically.
-  m_events->addHandler(EventTypes::ServerAppForceReconnect, m_events->getSystemTarget(), [this](const auto &) {
+  getEvents()->addHandler(EventTypes::ServerAppForceReconnect, getEvents()->getSystemTarget(), [this](const auto &) {
     forceReconnect();
   });
 
   // to work around the sticky meta keys problem, we'll give users
   // the option to reset the state of the server.
-  m_events->addHandler(EventTypes::ServerAppResetServer, m_events->getSystemTarget(), [this](const auto &) {
+  getEvents()->addHandler(EventTypes::ServerAppResetServer, getEvents()->getSystemTarget(), [this](const auto &) {
     resetServer();
   });
 
@@ -653,25 +633,24 @@ int ServerApp::mainLoop()
 
   runCocoaApp();
 #else
-  m_events->loop();
+  getEvents()->loop();
 #endif
 
   DAEMON_RUNNING(false);
 
   // close down
-  LOG((CLOG_DEBUG1 "stopping server"));
-  m_events->removeHandler(EventTypes::ServerAppForceReconnect, m_events->getSystemTarget());
-  m_events->removeHandler(EventTypes::ServerAppReloadConfig, m_events->getSystemTarget());
+  LOG_DEBUG1("stopping server");
+  getEvents()->removeHandler(EventTypes::ServerAppForceReconnect, getEvents()->getSystemTarget());
+  getEvents()->removeHandler(EventTypes::ServerAppReloadConfig, getEvents()->getSystemTarget());
   cleanupServer();
-  updateStatus();
-  LOG((CLOG_NOTE "stopped server"));
+  LOG_NOTE("stopped server");
 
   return s_exitSuccess;
 }
 
 void ServerApp::resetServer()
 {
-  LOG((CLOG_DEBUG1 "resetting server"));
+  LOG_DEBUG1("resetting server");
   stopServer();
   cleanupServer();
   startServer();
@@ -681,7 +660,7 @@ int ServerApp::runInner(int argc, char **argv, StartupFunc startup)
 {
   // general initialization
   m_deskflowAddress = new NetworkAddress;
-  args().m_config = std::make_shared<Config>(m_events);
+  args().m_config = std::make_shared<Config>(getEvents());
   args().m_pname = QFileInfo(argv[0]).fileName().toLocal8Bit().constData();
 
   // run
@@ -696,23 +675,9 @@ int daemonMainLoopStatic(int argc, const char **argv)
   return ServerApp::instance().daemonMainLoop(argc, argv);
 }
 
-int ServerApp::standardStartup(int argc, char **argv)
+int ServerApp::start(int argc, char **argv)
 {
   initApp(argc, argv);
-
-  // daemonize if requested
-  if (args().m_daemon) {
-    return ARCH->daemonize(daemonName(), daemonMainLoopStatic);
-  } else {
-    return mainLoop();
-  }
-}
-
-int ServerApp::foregroundStartup(int argc, char **argv)
-{
-  initApp(argc, argv);
-
-  // never daemonize
   return mainLoop();
 }
 
@@ -738,8 +703,8 @@ void ServerApp::startNode()
 {
   // start the server.  if this return false then we've failed and
   // we shouldn't retry.
-  LOG((CLOG_DEBUG1 "starting server"));
+  LOG_DEBUG1("starting server");
   if (!startServer()) {
-    m_bye(s_exitFailed);
+    bye(s_exitFailed);
   }
 }

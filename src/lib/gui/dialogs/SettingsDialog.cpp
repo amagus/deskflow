@@ -31,6 +31,17 @@ SettingsDialog::SettingsDialog(QWidget *parent, const IServerConfig &serverConfi
 
   ui->setupUi(this);
 
+  // Set Tooltip for the logLevel Items
+  ui->comboLogLevel->setItemData(0, tr("Required messages"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(1, tr("Non-fatal errors"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(2, tr("General warnings"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(3, tr("Notable events"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(4, tr("General events [Default]"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(5, tr("Debug entries"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(6, tr("More debug output"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(7, tr("Verbose debug output"), Qt::ToolTipRole);
+  ui->lblDebugWarning->setVisible(false);
+
   ui->comboTlsKeyLength->setItemIcon(0, QIcon::fromTheme(QStringLiteral("security-medium")));
   ui->comboTlsKeyLength->setItemIcon(1, QIcon::fromTheme(QIcon::ThemeIcon::SecurityHigh));
   ui->lblTlsCertInfo->setFixedSize(28, 28);
@@ -43,7 +54,6 @@ SettingsDialog::SettingsDialog(QWidget *parent, const IServerConfig &serverConfi
   ui->tabWidget->setCurrentIndex(0);
 
   loadFromConfig();
-  updateControls();
 
   adjustSize();
   QApplication::processEvents();
@@ -67,6 +77,7 @@ void SettingsDialog::initConnections() const
   connect(ui->btnTlsCertPath, &QPushButton::clicked, this, &SettingsDialog::browseCertificatePath);
   connect(ui->btnBrowseLog, &QPushButton::clicked, this, &SettingsDialog::browseLogPath);
   connect(ui->cbLogToFile, &QCheckBox::toggled, this, &SettingsDialog::setLogToFile);
+  connect(ui->comboLogLevel, &QComboBox::currentIndexChanged, this, &SettingsDialog::logLevelChanged);
 }
 
 void SettingsDialog::regenCertificates()
@@ -178,7 +189,7 @@ void SettingsDialog::loadFromConfig()
     ui->rbIconColorful->setChecked(true);
 
   qDebug() << "load from config done";
-  updateTlsControls();
+  updateControls();
 }
 
 void SettingsDialog::updateTlsControls()
@@ -191,35 +202,28 @@ void SettingsDialog::updateTlsControls()
   ui->comboTlsKeyLength->setCurrentText(Settings::value(Settings::Security::KeySize).toString());
 
   const auto tlsEnabled = Settings::value(Settings::Security::TlsEnabled).toBool();
-  const auto writable = Settings::isWritable();
-  const auto enabled = writable && tlsEnabled;
 
   ui->lineTlsCertPath->setText(certificate);
   ui->cbRequireClientCert->setChecked(Settings::value(Settings::Security::CheckPeers).toBool());
   ui->groupSecurity->setChecked(tlsEnabled);
 
-  ui->groupSecurity->setEnabled(writable);
-  ui->comboTlsKeyLength->setEnabled(enabled);
-  ui->widgetTlsCert->setEnabled(enabled);
-  ui->lblTlsKeyLength->setEnabled(enabled);
-  ui->btnTlsRegenCert->setEnabled(enabled);
-  ui->cbRequireClientCert->setEnabled(enabled);
+  ui->groupSecurity->setEnabled(Settings::isWritable());
+
+  updateTlsControlsEnabled();
 }
 
 void SettingsDialog::updateTlsControlsEnabled()
 {
   const auto writable = Settings::isWritable();
-  const auto clientMode =
-      Settings::value(Settings::Core::CoreMode).value<Settings::CoreMode>() == Settings::CoreMode::Client;
   const auto tlsChecked = ui->groupSecurity->isChecked();
 
-  auto enabled = writable && tlsChecked && !clientMode;
+  auto enabled = writable && tlsChecked;
   ui->lblTlsKeyLength->setEnabled(enabled);
   ui->comboTlsKeyLength->setEnabled(enabled);
   ui->lblTlsCert->setEnabled(enabled);
   ui->widgetTlsCert->setEnabled(enabled);
   ui->btnTlsRegenCert->setEnabled(enabled);
-  ui->cbRequireClientCert->setEnabled(enabled);
+  ui->cbRequireClientCert->setEnabled(enabled && !isClientMode());
 }
 
 bool SettingsDialog::isClientMode() const
@@ -272,8 +276,7 @@ void SettingsDialog::updateControls()
     ui->groupService->setVisible(false);
   }
 
-  ui->cbLanguageSync->setEnabled(writable && isClientMode());
-  ui->cbScrollDirection->setEnabled(writable && isClientMode());
+  ui->groupClientOptions->setEnabled(writable && isClientMode());
 
   ui->widgetLogFilename->setEnabled(writable && logToFile);
 
@@ -285,6 +288,11 @@ void SettingsDialog::updateRequestedKeySize() const
   if (ui->comboTlsKeyLength->currentText() == Settings::value(Settings::Security::KeySize).toString())
     return;
   Settings::setValue(Settings::Security::KeySize, ui->comboTlsKeyLength->currentText());
+}
+
+void SettingsDialog::logLevelChanged()
+{
+  ui->lblDebugWarning->setVisible(ui->comboLogLevel->currentIndex() > 4);
 }
 
 SettingsDialog::~SettingsDialog() = default;

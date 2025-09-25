@@ -9,7 +9,6 @@
 #pragma once
 
 #include "arch/IArchNetwork.h"
-#include "common/IInterface.h"
 #include "net/SecurityLevel.h"
 
 class IDataSocket;
@@ -20,9 +19,10 @@ class IListenSocket;
 This interface defines the methods common to all factories used to
 create sockets.
 */
-class ISocketFactory : public IInterface
+class ISocketFactory
 {
 public:
+  virtual ~ISocketFactory() = default;
   //! @name accessors
   //@{
 

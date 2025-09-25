@@ -43,8 +43,7 @@ public:
   {
     return false;
   }
-  int foregroundStartup(int argc, char **argv) override;
-  int standardStartup(int argc, char **argv) override;
+  int start(int argc, char **argv) override;
   int runInner(int argc, char **argv, StartupFunc startup) override;
   deskflow::Screen *createScreen() override;
   int mainLoop() override;
@@ -62,10 +61,6 @@ public:
   //
   // Regular functions
   //
-
-  void updateStatus() const;
-  void updateStatus(const std::string_view &) const;
-  void handleScreenError();
   deskflow::Screen *openClientScreen();
   void closeClientScreen(deskflow::Screen *screen);
   void handleClientRestart(const Event &, EventQueueTimer *vtimer);

@@ -6,49 +6,22 @@
  */
 
 #include "arch/ArchDaemonNone.h"
+#include <QString>
 
 //
 // ArchDaemonNone
 //
 
-void ArchDaemonNone::installDaemon(const char *, const char *, const char *, const char *, const char *)
-{
-  // do nothing
-}
-
-void ArchDaemonNone::uninstallDaemon(const char *)
-{
-  // do nothing
-}
-
-int ArchDaemonNone::daemonize(const char *name, DaemonFunc const &func)
+int ArchDaemonNone::daemonize(const QString &name, DaemonFunc const &func)
 {
   // simply forward the call to func.  obviously, this doesn't
   // do any daemonizing.
-  return func(1, &name);
+  auto t = name.toStdString();
+  const char *n = t.c_str();
+  return func(1, &n);
 }
 
-bool ArchDaemonNone::canInstallDaemon(const char *)
+QString ArchDaemonNone::commandLine() const
 {
-  return false;
-}
-
-bool ArchDaemonNone::isDaemonInstalled(const char *)
-{
-  return false;
-}
-
-void ArchDaemonNone::installDaemon()
-{
-  // do nothing
-}
-
-void ArchDaemonNone::uninstallDaemon()
-{
-  // do nothing
-}
-
-std::string ArchDaemonNone::commandLine() const
-{
-  return "";
+  return {};
 }

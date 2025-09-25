@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: MIT
 
 add_library(base STATIC
+  BaseException.cpp
+  BaseException.h
   DirectionTypes.h
   Event.cpp
   Event.h
@@ -15,7 +17,6 @@ add_library(base STATIC
   FunctionEventJob.h
   FunctionJob.cpp
   FunctionJob.h
-  IEventJob.h
   IEventQueue.h
   IEventQueueBuffer.h
   IJob.h
@@ -38,8 +39,9 @@ add_library(base STATIC
   TMethodJob.h
   Unicode.cpp
   Unicode.h
-  XBase.cpp
-  XBase.h
 )
 
-target_link_libraries(base PRIVATE arch)
+target_link_libraries(base PUBLIC arch)
+if (CMAKE_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
+  target_compile_definitions(base PUBLIC WORDS_BIGENDIAN=1)
+endif()

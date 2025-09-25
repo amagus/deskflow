@@ -17,6 +17,7 @@
 #endif
 
 #include <QFileInfo>
+#include <QSysInfo>
 
 deskflow::ArgsBase *ArgParser::m_argsBase = nullptr;
 
@@ -40,7 +41,7 @@ bool ArgParser::parseServerArgs(deskflow::ServerArgs &args, int argc, const char
     } else if (isArg(i, argc, argv, nullptr, "--disable-client-cert-check")) {
       args.m_chkPeerCert = false;
     } else {
-      LOG((CLOG_CRIT "%s: unrecognized option `%s'" BYE, args.m_pname, argv[i], args.m_pname));
+      LOG_CRIT("%s: unrecognized option `%s'" BYE, args.m_pname, argv[i], args.m_pname);
       return false;
     }
     ++i;
@@ -79,7 +80,7 @@ bool ArgParser::parseClientArgs(deskflow::ClientArgs &args, int argc, const char
         return true;
       }
 
-      LOG((CLOG_CRIT "%s: unrecognized option `%s'" BYE, args.m_pname, argv[i], args.m_pname));
+      LOG_CRIT("%s: unrecognized option `%s'" BYE, args.m_pname, argv[i], args.m_pname);
       return false;
     }
     ++i;
@@ -87,7 +88,7 @@ bool ArgParser::parseClientArgs(deskflow::ClientArgs &args, int argc, const char
 
   // exactly one non-option argument (server-address)
   if (i == argc && !args.m_shouldExitFail && !args.m_shouldExitOk) {
-    LOG((CLOG_CRIT "%s: a server address or name is required" BYE, args.m_pname, args.m_pname));
+    LOG_CRIT("%s: a server address or name is required" BYE, args.m_pname, args.m_pname);
     return false;
   }
 
@@ -128,12 +129,6 @@ bool ArgParser::parseGenericArgs(int argc, const char *const *argv, int &i) cons
     argsBase().m_logFilter = argv[++i];
   } else if (isArg(i, argc, argv, "-l", "--log", 1)) {
     argsBase().m_logFile = argv[++i];
-  } else if (isArg(i, argc, argv, "-f", "--no-daemon")) {
-    // not a daemon
-    argsBase().m_daemon = false;
-  } else if (isArg(i, argc, argv, nullptr, "--daemon")) {
-    // daemonize
-    argsBase().m_daemon = true;
   } else if (isArg(i, argc, argv, "-n", "--name", 1)) {
     // save screen name
     argsBase().m_name = argv[++i];
@@ -181,7 +176,7 @@ bool ArgParser::parseDeprecatedArgs(int argc, const char *const *argv, int &i) c
 
   for (auto &arg : deprecatedArgs) {
     if (isArg(i, argc, argv, nullptr, arg)) {
-      LOG((CLOG_NOTE "%s is deprecated", arg));
+      LOG_NOTE("%s is deprecated", arg);
       i++;
       return true;
     }
@@ -197,7 +192,7 @@ bool ArgParser::isArg(
   if ((name1 != nullptr && strcmp(argv[argi], name1) == 0) || (name2 != nullptr && strcmp(argv[argi], name2) == 0)) {
     // match.  check args left.
     if (argi + minRequiredParameters >= argc) {
-      LOG((CLOG_PRINT "%s: missing arguments for `%s'" BYE, argsBase().m_pname, argv[argi], argsBase().m_pname));
+      LOG_PRINT("%s: missing arguments for `%s'" BYE, argsBase().m_pname, argv[argi], argsBase().m_pname);
       argsBase().m_shouldExitFail = true;
       return false;
     }
@@ -332,25 +327,11 @@ std::string ArgParser::assembleCommand(
 
 void ArgParser::updateCommonArgs(const char *const *argv) const
 {
-  argsBase().m_name = ARCH->getHostName();
+  argsBase().m_name = QSysInfo::machineHostName().toStdString();
   argsBase().m_pname = QFileInfo(argv[0]).fileName().toLocal8Bit().constData();
 }
 
 bool ArgParser::checkUnexpectedArgs() const
 {
-#if SYSAPI_WIN32
-  // suggest that user installs as a windows service. when launched as
-  // service, process should automatically detect that it should run in
-  // daemon mode.
-  if (argsBase().m_daemon) {
-    LOG(
-        (CLOG_ERR "the --daemon argument is not supported on windows. "
-                  "instead, install %s as a service (--service install)",
-         argsBase().m_pname)
-    );
-    return true;
-  }
-#endif
-
   return false;
 }

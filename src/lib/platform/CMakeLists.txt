@@ -96,6 +96,8 @@ elseif(APPLE)
   )
 elseif(UNIX)
   set(PLATFORM_SOURCES
+    XDGPowerManager.cpp
+    XDGPowerManager.h
     XWindowsClipboard.cpp
     XWindowsClipboard.h
     XWindowsClipboardAnyBitmapConverter.cpp
@@ -114,8 +116,6 @@ elseif(UNIX)
     XWindowsEventQueueBuffer.h
     XWindowsKeyState.cpp
     XWindowsKeyState.h
-    XWindowsPowerManager.cpp
-    XWindowsPowerManager.h
     XWindowsScreen.cpp
     XWindowsScreen.h
     XWindowsScreenSaver.cpp
@@ -177,6 +177,11 @@ if(UNIX)
     ${libs})
 
   if(NOT APPLE)
+
+    if(${LIBXKBCOMMON_VERSION} VERSION_GREATER_EQUAL "1.10")
+      target_compile_definitions(platform PRIVATE HAVE_XKB_KEYMAP_MOD_GET_MASK=1)
+    endif()
+
     target_link_libraries(platform Qt6::DBus)
 
     link_wayland_libs()

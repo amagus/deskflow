@@ -5,12 +5,12 @@
  * SPDX-License-Identifier: GPL-2.0-only WITH LicenseRef-OpenSSL-Exception
  */
 
-#include "platform/XWindowsUtil.h"
+#include "base/Log.h" //Include First
 
-#include "base/Log.h"
 #include "base/String.h"
 #include "deskflow/KeyTypes.h"
 #include "mt/Thread.h"
+#include "platform/XWindowsUtil.h"
 
 #include <X11/Xatom.h>
 #define XK_APL
@@ -69,7 +69,9 @@ struct codepair
 {
   KeySym keysym;
   uint32_t ucs4;
-} s_keymap[] = {
+};
+
+std::vector<codepair> s_keymap = {
     {XK_Aogonek, 0x0104},      /* LATIN CAPITAL LETTER A WITH OGONEK */
     {XK_breve, 0x02d8},        /* BREVE */
     {XK_Lstroke, 0x0141},      /* LATIN CAPITAL LETTER L WITH STROKE */
@@ -1576,7 +1578,7 @@ bool XWindowsUtil::getWindowProperty(
     *type = actualType;
   }
   if (format != nullptr) {
-    *format = static_cast<int32_t>(actualDatumSize);
+    *format = actualDatumSize;
   }
 
   if (okay) {
@@ -1586,7 +1588,7 @@ bool XWindowsUtil::getWindowProperty(
     );
     return true;
   } else {
-    LOG((CLOG_DEBUG2 "can't read property %d on window 0x%08x", property, window));
+    LOG_DEBUG2("can't read property %d on window 0x%08x", property, window);
     return false;
   }
 }
@@ -1747,7 +1749,7 @@ KeyID XWindowsUtil::mapKeySymToKeyID(KeySym k)
   default: {
     // lookup character in table
     if (KeySymMap::const_iterator index = s_keySymToUCS4.find(k); index != s_keySymToUCS4.end()) {
-      return static_cast<KeyID>(index->second);
+      return index->second;
     }
 
     // unknown character
@@ -1886,7 +1888,7 @@ void XWindowsUtil::initKeyMaps()
 {
   if (s_keySymToUCS4.empty()) {
     for (size_t i = 0; i < std::size(s_keymap); ++i) {
-      s_keySymToUCS4[s_keymap[i].keysym] = s_keymap[i].ucs4;
+      s_keySymToUCS4[s_keymap.at(i).keysym] = s_keymap.at(i).ucs4;
     }
   }
 }
@@ -1949,13 +1951,13 @@ int XWindowsUtil::ErrorLock::internalHandler(Display *display, XErrorEvent *even
 
 void XWindowsUtil::ErrorLock::ignoreHandler(Display *, XErrorEvent *e, void *)
 {
-  LOG((CLOG_DEBUG1 "ignoring X error: %d", e->error_code));
+  LOG_DEBUG1("ignoring X error: %d", e->error_code);
 }
 
 void XWindowsUtil::ErrorLock::saveHandler(Display *display, XErrorEvent *e, void *flag)
 {
   char errtxt[1024];
   XGetErrorText(display, e->error_code, errtxt, 1023);
-  LOG((CLOG_DEBUG1 "flagging X error: %d - %.1023s", e->error_code, errtxt));
+  LOG_DEBUG1("flagging X error: %d - %.1023s", e->error_code, errtxt);
   *static_cast<bool *>(flag) = true;
 }

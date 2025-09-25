@@ -12,10 +12,12 @@
 #include "deskflow/ClientArgs.h"
 #include "deskflow/KeyMap.h"
 #include "deskflow/PlatformScreen.h"
-#include "platform/XWindowsPowerManager.h"
+#include "platform/XDGPowerManager.h"
 
 #include <set>
 #include <vector>
+
+#include <QString>
 
 #include <X11/Xlib.h>
 
@@ -249,5 +251,5 @@ private:
   // pointer to (singleton) screen.  this is only needed by
   // ioErrorHandler().
   static XWindowsScreen *s_screen;
-  XWindowsPowerManager m_powerManager;
+  XDGPowerManager m_powerManager;
 };

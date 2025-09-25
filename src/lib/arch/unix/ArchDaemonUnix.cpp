@@ -8,7 +8,7 @@
 
 #include "arch/unix/ArchDaemonUnix.h"
 
-#include "arch/XArch.h"
+#include "arch/ArchException.h"
 #include "arch/unix/XArchUnix.h"
 #include "base/Log.h"
 
@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <QString>
 //
 // ArchDaemonUnix
 //
@@ -46,11 +47,14 @@ bool alreadyDaemonized()
 
 #endif
 
-int ArchDaemonUnix::daemonize(const char *name, DaemonFunc const &func)
+int ArchDaemonUnix::daemonize(const QString &name, DaemonFunc const &func)
 {
 #ifdef __APPLE__
-  if (alreadyDaemonized())
-    return func(1, &name);
+  if (alreadyDaemonized()) {
+    auto t = name.toStdString();
+    const char *n = t.c_str();
+    return func(1, &n);
+  }
 #endif
 
   // fork so shell thinks we're done and so we're not a process
@@ -58,7 +62,7 @@ int ArchDaemonUnix::daemonize(const char *name, DaemonFunc const &func)
   switch (fork()) {
   case -1:
     // failed
-    throw XArchDaemonFailed(errorToString(errno));
+    throw ArchDaemonFailedException(errorToString(errno));
 
   case 0:
     // child
@@ -78,7 +82,7 @@ int ArchDaemonUnix::daemonize(const char *name, DaemonFunc const &func)
   // TODO: this is a bit of a hack - can we find a better solution?
   if (int chdirErr = chdir("/"); chdirErr)
     // NB: file logging actually isn't working at this point!
-    LOG((CLOG_ERR "chdir error: %i", chdirErr));
+    LOG_ERR("chdir error: %i", chdirErr);
 #endif
 
   // mask off permissions for any but owner
@@ -96,7 +100,7 @@ int ArchDaemonUnix::daemonize(const char *name, DaemonFunc const &func)
 
   if (int dupErr = dup(1); dupErr < 0) {
     // NB: file logging actually isn't working at this point!
-    LOG((CLOG_ERR "dup error: %i", dupErr));
+    LOG_ERR("dup error: %i", dupErr);
   }
 
 #ifdef __APPLE__
@@ -104,5 +108,8 @@ int ArchDaemonUnix::daemonize(const char *name, DaemonFunc const &func)
 #endif
 
   // invoke function
-  return func(1, &name);
+
+  auto t = name.toStdString();
+  const char *n = t.c_str();
+  return func(1, &n);
 }

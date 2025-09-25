@@ -109,14 +109,14 @@ public:
     return *s_instance;
   }
 
-  void (*m_bye)(int);
+  void handleScreenError() const;
 
 protected:
   void runEventsLoop(void *);
 
-  IEventQueue *m_events = nullptr;
-
 private:
+  void (*m_bye)(int);
+  IEventQueue *m_events = nullptr;
   deskflow::ArgsBase *m_args;
   static App *s_instance;
   FileLogOutputter *m_fileLog = nullptr;
@@ -149,26 +149,6 @@ constexpr static auto s_helpCommonArgs = //
     " [--name <screen-name>]"
     " [--restart|--no-restart]"
     " [--debug <level>]";
-
-// system args (windows/unix)
-#if SYSAPI_UNIX
-
-// unix daemon mode args
-constexpr static auto s_helpSysArgs = " [--daemon|--no-daemon]";
-constexpr static auto s_helpSysInfo = //
-    "  -f, --no-daemon          run in the foreground.\n"
-    "*     --daemon             run as a daemon.\n";
-
-#elif SYSAPI_WIN32
-
-// windows args
-constexpr static auto s_helpSysArgs = " [--service <action>] [--relaunch]";
-constexpr static auto s_helpSysInfo = //
-    "      --service <action>   manage the windows service, valid options are:\n"
-    "                             install/uninstall/start/stop\n"
-    "      --relaunch           persistently relaunches process in current user \n"
-    "                             session (useful for vista and upward).\n";
-#endif
 
 #if !defined(WINAPI_LIBEI) && WINAPI_XWINDOWS
 constexpr static auto s_helpNoWayland = //

@@ -6,6 +6,7 @@
  */
 
 #include "deskflow/IKeyState.h"
+#include "common/Common.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -26,7 +27,7 @@ IKeyState::IKeyState(const IEventQueue *)
 
 IKeyState::KeyInfo *IKeyState::KeyInfo::alloc(KeyID id, KeyModifierMask mask, KeyButton button, int32_t count)
 {
-  auto *info = (KeyInfo *)malloc(sizeof(KeyInfo));
+  auto *info = new KeyInfo();
   info->m_key = id;
   info->m_mask = mask;
   info->m_button = button;
@@ -44,7 +45,13 @@ IKeyState::KeyInfo *IKeyState::KeyInfo::alloc(
   const char *buffer = screens.c_str();
 
   // build structure
+#if SYSAPI_WIN32
+  // On windows we use malloc to avoid random test failures
   auto *info = (KeyInfo *)malloc(sizeof(KeyInfo) + screens.size());
+#else
+  auto *info = new KeyInfo();
+#endif
+
   info->m_key = id;
   info->m_mask = mask;
   info->m_button = button;
@@ -57,7 +64,14 @@ IKeyState::KeyInfo *IKeyState::KeyInfo::alloc(
 IKeyState::KeyInfo *IKeyState::KeyInfo::alloc(const KeyInfo &x)
 {
   auto bufferLen = strnlen(x.m_screensBuffer, SIZE_MAX);
+
+#if SYSAPI_WIN32
+  // On windows we use malloc to avoid random test failures
   auto info = (KeyInfo *)malloc(sizeof(KeyInfo) + bufferLen);
+#else
+  auto *info = new KeyInfo();
+#endif
+
   info->m_key = x.m_key;
   info->m_mask = x.m_mask;
   info->m_button = x.m_button;
@@ -134,7 +148,7 @@ void IKeyState::KeyInfo::split(const char *screens, std::set<std::string> &dst)
   const char *i = screens + 1;
   while (*i != '\0') {
     const char *j = strchr(i, ':');
-    dst.emplace(std::string(i, j - i));
+    dst.emplace(i, j - i);
     i = j + 1;
   }
 }

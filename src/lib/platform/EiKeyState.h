@@ -10,6 +10,8 @@
 #include "deskflow/KeyState.h"
 #include "platform/EiScreen.h"
 
+#include <xkbcommon/xkbcommon.h>
+
 struct xkb_context;
 struct xkb_keymap;
 struct xkb_state;
@@ -32,7 +34,7 @@ public:
   std::int32_t pollActiveGroup() const override;
   void pollPressedKeys(KeyButtonSet &pressedKeys) const override;
   KeyID mapKeyFromKeyval(std::uint32_t keyval) const;
-  void updateXkbState(std::uint32_t keyval, bool is_pressed);
+  void updateXkbState(std::uint32_t keyval, bool isPressed);
 
 protected:
   // KeyState overrides
@@ -40,7 +42,7 @@ protected:
   void fakeKey(const Keystroke &keystroke) override;
 
 private:
-  std::uint32_t convertModMask(std::uint32_t xkb_mask) const;
+  std::uint32_t convertModMask(xkb_mod_mask_t xkbModMaskIn) const;
   void assignGeneratedModifiers(std::uint32_t keycode, KeyMap::KeyItem &item);
 
   EiScreen *m_screen = nullptr;

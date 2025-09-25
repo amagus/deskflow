@@ -1,5 +1,6 @@
 /*
  * Deskflow -- mouse and keyboard sharing utility
+ * SPDX-FileCopyrightText: (C) 2025 Deskflow Developers
  * SPDX-FileCopyrightText: (C) 2012 - 2016 Symless Ltd.
  * SPDX-FileCopyrightText: (C) 2002 Chris Schoeneman
  * SPDX-License-Identifier: GPL-2.0-only WITH LicenseRef-OpenSSL-Exception
@@ -7,9 +8,8 @@
 
 #pragma once
 
-#include "common/IInterface.h"
+#include <cstdint>
 #include <string>
-
 #include <vector>
 
 class ArchThreadImpl;
@@ -49,9 +49,10 @@ using ArchNetAddress = ArchNetAddressImpl *;
 This interface defines the networking operations required by
 deskflow.  Each architecture must implement this interface.
 */
-class IArchNetwork : public IInterface
+class IArchNetwork
 {
 public:
+  virtual ~IArchNetwork() = default;
   //! Supported address families
   enum class AddressFamily : uint8_t
   {
@@ -213,7 +214,7 @@ public:
   //! Check error on socket
   /*!
   If the socket \c s is in an error state then throws an appropriate
-  XArchNetwork exception.
+  ArchNetworkException exception.
   */
   virtual void throwErrorOnSocket(ArchSocket s) = 0;
 
@@ -230,9 +231,6 @@ public:
   TIME_WAIT state.  Returns the previous state.
   */
   virtual bool setReuseAddrOnSocket(ArchSocket, bool reuse) = 0;
-
-  //! Return local host's name
-  virtual std::string getHostName() = 0;
 
   //! Create an "any" network address
   virtual ArchNetAddress newAnyAddr(AddressFamily) = 0;

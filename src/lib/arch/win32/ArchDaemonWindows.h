@@ -15,7 +15,8 @@
 #include <tchar.h>
 
 #include <functional>
-#include <string>
+
+#include <QString>
 
 #define ARCH_DAEMON ArchDaemonWindows
 
@@ -67,16 +68,8 @@ public:
   static UINT getDaemonQuitMessage();
 
   // IArchDaemon overrides
-  void installDaemon(
-      const char *name, const char *description, const char *pathname, const char *commandLine, const char *dependencies
-  ) override;
-  void uninstallDaemon(const char *name) override;
-  void installDaemon() override;
-  void uninstallDaemon() override;
-  int daemonize(const char *name, DaemonFunc const &func) override;
-  bool canInstallDaemon(const char *name) override;
-  bool isDaemonInstalled(const char *name) override;
-  std::string commandLine() const override
+  int daemonize(const QString &name, DaemonFunc const &func) override;
+  QString commandLine() const override
   {
     return m_commandLine;
   }
@@ -100,14 +93,14 @@ private:
   void serviceHandler(DWORD ctrl);
   static void WINAPI serviceHandlerEntry(DWORD ctrl);
 
-  void start(const char *name);
-  void stop(const char *name);
+  void start(const QString &name);
+  void stop(const QString &name);
 
 private:
-  class XArchDaemonRunFailed
+  class ArchDaemonRunException
   {
   public:
-    XArchDaemonRunFailed(int result) : m_result(result)
+    ArchDaemonRunException(int result) : m_result(result)
     {
     }
 
@@ -132,10 +125,5 @@ private:
 
   UINT m_quitMessage;
 
-  std::string m_commandLine;
+  QString m_commandLine;
 };
-
-#define DEFAULT_DAEMON_INFO _T("Runs the Core process on secure desktops (UAC prompts, login screen, etc).")
-
-#define LEGACY_SERVER_DAEMON_NAME _T("Deskflow Server")
-#define LEGACY_CLIENT_DAEMON_NAME _T("Deskflow Client")

@@ -21,7 +21,7 @@ subclasses to implement the rest.
 class PlatformScreen : public IPlatformScreen
 {
 public:
-  PlatformScreen(
+  explicit PlatformScreen(
       IEventQueue *events, deskflow::ClientScrollDirection scrollDirection = deskflow::ClientScrollDirection::Normal
   );
   ~PlatformScreen() override = default;
@@ -105,6 +105,11 @@ protected:
    * \return converted value according to the client scroll direction
    */
   virtual int32_t mapClientScrollDirection(int32_t) const;
+
+  /*!
+  Converts a sides mask (e.g. LeftMask | RightMask) to a string representation (e.g. "LR").
+   */
+  static std::string sidesMaskToString(uint32_t sides);
 
 private:
   /*!

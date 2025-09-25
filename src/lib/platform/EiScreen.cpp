@@ -9,14 +9,15 @@
 #include "platform/EiScreen.h"
 
 #include "arch/Arch.h"
-#include "arch/XArch.h"
+#include "arch/ArchException.h"
 #include "base/IEventQueue.h"
 #include "base/Log.h"
 #include "base/Stopwatch.h"
 #include "common/Constants.h"
+#include "deskflow/App.h"
 #include "deskflow/Clipboard.h"
 #include "deskflow/KeyMap.h"
-#include "deskflow/XScreen.h"
+#include "deskflow/ScreenException.h"
 #include "platform/EiEventQueueBuffer.h"
 #include "platform/EiKeyState.h"
 #include "platform/PortalInputCapture.h"
@@ -38,8 +39,8 @@ struct ScrollRemainder
 
 namespace deskflow {
 
-EiScreen::EiScreen(bool isPrimary, IEventQueue *events, bool usePortal)
-    : PlatformScreen{events},
+EiScreen::EiScreen(bool isPrimary, IEventQueue *events, bool usePortal, deskflow::ClientScrollDirection scrollDirection)
+    : PlatformScreen{events, scrollDirection},
       m_isPrimary{isPrimary},
       m_events{events},
       m_w{1},
@@ -72,6 +73,11 @@ EiScreen::EiScreen(bool isPrimary, IEventQueue *events, bool usePortal)
       LOG_ERR("ei init error: %s", strerror(-rc));
       throw std::runtime_error("failed to init ei context");
     }
+  }
+
+  // disable sleep if the flag is set
+  if (App::instance().argsBase().m_preventSleep) {
+    m_powerManager.disableSleep();
   }
 }
 
@@ -123,7 +129,7 @@ void EiScreen::initEi()
 
   // install the platform event queue
   m_events->adoptBuffer(nullptr);
-  m_events->adoptBuffer(new EiEventQueueBuffer(this, m_ei, m_events));
+  m_events->adoptBuffer(new EiEventQueueBuffer(m_ei, m_events));
 }
 
 void EiScreen::cleanupEi()
@@ -179,7 +185,8 @@ void EiScreen::getCursorPos(int32_t &x, int32_t &y) const
 
 void EiScreen::reconfigure(uint32_t activeSides)
 {
-  LOG((CLOG_DEBUG "active sides: %x", activeSides));
+  const static auto sidesText = sidesMaskToString(activeSides);
+  LOG_DEBUG("active sides: %s (0x%02x)", sidesText.c_str(), activeSides);
   m_activeSides = activeSides;
 }
 
@@ -303,6 +310,8 @@ void EiScreen::fakeMouseWheel(int32_t xDelta, int32_t yDelta) const
   if (!m_eiPointer)
     return;
 
+  xDelta = mapClientScrollDirection(xDelta);
+  yDelta = mapClientScrollDirection(yDelta);
   // libei and deskflow seem to use opposite directions, so we have
   // to send EI the opposite of the value received if we want to remain
   // compatible with other platforms (including X11).
@@ -310,14 +319,14 @@ void EiScreen::fakeMouseWheel(int32_t xDelta, int32_t yDelta) const
   ei_device_frame(m_eiPointer, ei_now(m_ei));
 }
 
-void EiScreen::fakeKey(uint32_t keycode, bool is_down) const
+void EiScreen::fakeKey(uint32_t keycode, bool isDown) const
 {
   if (!m_eiKeyboard)
     return;
 
-  auto xkb_keycode = keycode + 8;
-  m_keyState->updateXkbState(xkb_keycode, is_down);
-  ei_device_keyboard_key(m_eiKeyboard, keycode, is_down);
+  auto xkbKeycode = keycode + 8;
+  m_keyState->updateXkbState(xkbKeycode, isDown);
+  ei_device_keyboard_key(m_eiKeyboard, keycode, isDown);
   ei_device_frame(m_eiKeyboard, ei_now(m_ei));
 }
 
@@ -539,7 +548,7 @@ ButtonID EiScreen::mapButtonFromEvdev(ei_event *event) const
   return kButtonNone;
 }
 
-bool EiScreen::onHotkey(KeyID keyid, bool is_pressed, KeyModifierMask mask)
+bool EiScreen::onHotkey(KeyID keyid, bool isPressed, KeyModifierMask mask)
 {
   auto it = m_hotkeys.find(keyid);
 
@@ -551,7 +560,7 @@ bool EiScreen::onHotkey(KeyID keyid, bool is_pressed, KeyModifierMask mask)
   // but we don't put a limitation on modifiers in the hotkeys. So some
   // key combinations may not work correctly, more effort is needed here.
   if (auto id = it->second.findByMask(mask); id != 0) {
-    EventTypes type = is_pressed ? EventTypes::PrimaryScreenHotkeyDown : EventTypes::PrimaryScreenHotkeyUp;
+    EventTypes type = isPressed ? EventTypes::PrimaryScreenHotkeyDown : EventTypes::PrimaryScreenHotkeyUp;
     sendEvent(type, HotKeyInfo::alloc(id));
     return true;
   }
@@ -605,12 +614,12 @@ void EiScreen::onPointerScrollEvent(ei_event *event)
 {
   // Ratio of 10 pixels == one wheel click because that's what mutter/gtk
   // use (for historical reasons).
-  const int PIXELS_PER_WHEEL_CLICK = 10;
+  static const int s_pixelsPerWheelClick = 10;
   // Our logical wheel clicks are multiples 120, so we
   // convert between the two and keep the remainders because
   // we will very likely get subpixel scroll events.
-  // This means a single pixel is 120/PIXEL_TO_WHEEL_RATIO in wheel values.
-  const int PIXEL_TO_WHEEL_RATIO = 120 / PIXELS_PER_WHEEL_CLICK;
+  // This means a single pixel is 120/s_pixelToWheelRation in wheel values.
+  const int s_pixelToWheelRatio = 120 / s_pixelsPerWheelClick;
 
   assert(m_isPrimary);
 
@@ -643,7 +652,7 @@ void EiScreen::onPointerScrollEvent(ei_event *event)
   if (x != 0 || y != 0)
     sendEvent(
         EventTypes::PrimaryScreenWheel,
-        WheelInfo::alloc((int32_t)-x * PIXEL_TO_WHEEL_RATIO, (int32_t)-y * PIXEL_TO_WHEEL_RATIO)
+        WheelInfo::alloc((int32_t)-x * s_pixelToWheelRatio, (int32_t)-y * s_pixelToWheelRatio)
     );
 
   remainder->x = rx;
@@ -679,19 +688,19 @@ void EiScreen::onMotionEvent(ei_event *event)
   if (m_isOnScreen) {
     LOG_DEBUG("event: motion on primary x=%i y=%i)", m_cursorX, m_cursorY);
     sendEvent(EventTypes::PrimaryScreenMotionOnPrimary, MotionInfo::alloc(m_cursorX, m_cursorY));
-    if (m_portalInputCapture->is_active()) {
+    if (m_portalInputCapture->isActive()) {
       m_portalInputCapture->release();
     }
   } else {
     m_bufferDX += dx;
     m_bufferDY += dy;
-    auto pixel_dx = static_cast<std::int32_t>(m_bufferDX);
-    auto pixel_dy = static_cast<std::int32_t>(m_bufferDY);
-    if (pixel_dx || pixel_dy) {
-      LOG_DEBUG1("event: motion on secondary x=%d y=%d", pixel_dx, pixel_dy);
-      sendEvent(EventTypes::PrimaryScreenMotionOnSecondary, MotionInfo::alloc(pixel_dx, pixel_dy));
-      m_bufferDX -= pixel_dx;
-      m_bufferDY -= pixel_dy;
+    auto pixelDx = static_cast<std::int32_t>(m_bufferDX);
+    auto pixelDy = static_cast<std::int32_t>(m_bufferDY);
+    if (pixelDx || pixelDy) {
+      LOG_DEBUG1("event: motion on secondary x=%d y=%d", pixelDx, pixelDy);
+      sendEvent(EventTypes::PrimaryScreenMotionOnSecondary, MotionInfo::alloc(pixelDx, pixelDy));
+      m_bufferDX -= pixelDx;
+      m_bufferDY -= pixelDy;
     }
   }
 }
@@ -775,7 +784,7 @@ void EiScreen::handleSystemEvent(const Event &sysevent)
       if (m_isPrimary) {
         LOG_DEBUG("re-allocating portal input capture connection and releasing active captures");
         if (m_portalInputCapture) {
-          if (m_portalInputCapture->is_active()) {
+          if (m_portalInputCapture->isActive()) {
             m_portalInputCapture->release();
           }
           delete m_portalInputCapture;

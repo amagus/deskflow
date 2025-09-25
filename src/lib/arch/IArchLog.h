@@ -1,5 +1,6 @@
 /*
  * Deskflow -- mouse and keyboard sharing utility
+ * SPDX-FileCopyrightText: (C) 2025 Deskflow Developers
  * SPDX-FileCopyrightText: (C) 2012 - 2016 Symless Ltd.
  * SPDX-FileCopyrightText: (C) 2002 Chris Schoeneman
  * SPDX-License-Identifier: GPL-2.0-only WITH LicenseRef-OpenSSL-Exception
@@ -7,17 +8,19 @@
 
 #pragma once
 
+#include <QString>
+
 #include "base/LogLevel.h"
-#include "common/IInterface.h"
 
 //! Interface for architecture dependent logging
 /*!
 This interface defines the logging operations required by
 deskflow.  Each architecture must implement this interface.
 */
-class IArchLog : public IInterface
+class IArchLog
 {
 public:
+  virtual ~IArchLog() = default;
   //! @name manipulators
   //@{
 
@@ -26,7 +29,7 @@ public:
   Opens the log for writing.  The log must be opened before being
   written to.
   */
-  virtual void openLog(const char *name) = 0;
+  virtual void openLog(const QString &name) = 0;
 
   //! Close the log
   /*!
@@ -47,7 +50,6 @@ public:
   /*!
   Writes the given string to the log with the given level.
   */
-  virtual void writeLog(LogLevel, const char *) = 0;
-
+  virtual void writeLog(LogLevel, const QString &) = 0;
   //@}
 };

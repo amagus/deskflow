@@ -16,13 +16,14 @@
 #include <QSystemTrayIcon>
 #include <QThread>
 
-#include "ServerConfig.h"
 #include "VersionChecker.h"
+#include "config/ServerConfig.h"
 #include "gui/core/ClientConnection.h"
 #include "gui/core/CoreProcess.h"
 #include "gui/core/ServerConnection.h"
 #include "gui/core/WaylandWarnings.h"
 #include "gui/tls/TlsUtility.h"
+#include "net/Fingerprint.h"
 
 #ifdef Q_OS_MAC
 #include "gui/OSXHelpers.h"
@@ -45,6 +46,7 @@ class QAbstractButton;
 class QLocalServer;
 
 class DeskflowApplication;
+class LogDock;
 
 namespace Ui {
 class MainWindow;
@@ -113,20 +115,19 @@ private:
 
   void showMyFingerprint();
   void updateSecurityIcon(bool visible);
+  void updateNetworkInfo();
 
   void coreModeToggled();
   void updateModeControls(bool serverMode);
-
+  void updateModeControlLabels();
   std::unique_ptr<Ui::MainWindow> ui;
 
-  void updateSize();
   void createMenuBar();
   void setupTrayIcon();
   void applyConfig();
   void setIcon();
   void setStatus(const QString &status);
   void updateFromLogLine(const QString &line);
-  [[nodiscard]] QString getIPAddresses() const;
   void checkConnected(const QString &line);
   void checkFingerprint(const QString &line);
   [[nodiscard]] QString getTimeStamp() const;
@@ -155,9 +156,13 @@ private:
    */
   QString trustedFingerprintDatabase() const;
 
-  // Generate prints if they are missing
-  // Returns true if successful
+  /**
+   * @brief regenerateLocalFingerprints Generate fingerprints if they are missing
+   * @return true when successful
+   */
   bool regenerateLocalFingerprints();
+
+  Fingerprint localFingerprint();
 
   void serverClientsChanged(const QStringList &clients);
 
@@ -180,6 +185,7 @@ private:
   QLocalServer *m_guiDupeChecker = nullptr;
   deskflow::gui::ipc::DaemonIpcClient *m_daemonIpcClient = nullptr;
 
+  LogDock *m_logDock;
   QLabel *m_lblSecurityStatus = nullptr;
   QLabel *m_lblStatus = nullptr;
   QToolButton *m_btnFingerprint = nullptr;

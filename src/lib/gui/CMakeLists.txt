@@ -38,8 +38,6 @@ add_library(${target} STATIC
   Messages.h
   ScreenSetupModel.cpp
   ScreenSetupModel.h
-  ServerConfig.cpp
-  ServerConfig.h
   Styles.h
   StyleUtils.h
   VersionChecker.cpp
@@ -51,6 +49,8 @@ add_library(${target} STATIC
   config/ScreenConfig.h
   config/ScreenList.cpp
   config/ScreenList.h
+  config/ServerConfig.cpp
+  config/ServerConfig.h
   core/ClientConnection.cpp
   core/ClientConnection.h
   core/CommandProcess.cpp
@@ -88,8 +88,6 @@ add_library(${target} STATIC
   dialogs/SettingsDialog.ui
   ipc/DaemonIpcClient.cpp
   ipc/DaemonIpcClient.h
-  proxy/QProcessProxy.cpp
-  proxy/QProcessProxy.h
   tls/TlsCertificate.cpp
   tls/TlsCertificate.h
   tls/TlsUtility.cpp
@@ -112,10 +110,16 @@ add_library(${target} STATIC
   validators/SpacesValidator.h
   validators/ValidationError.cpp
   validators/ValidationError.h
+  validators/IpAddressValidator.cpp
+  validators/IpAddressValidator.h
   widgets/FingerprintPreview.cpp
   widgets/FingerprintPreview.h
   widgets/KeySequenceWidget.cpp
   widgets/KeySequenceWidget.h
+  widgets/LogDock.cpp
+  widgets/LogDock.h
+  widgets/LogWidget.h
+  widgets/LogWidget.cpp
   widgets/NewScreenWidget.cpp
   widgets/NewScreenWidget.h
   widgets/ScreenSetupView.cpp

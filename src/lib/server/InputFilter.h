@@ -139,7 +139,7 @@ public:
       kToggle
     };
 
-    LockCursorToScreenAction(IEventQueue *events, Mode = kToggle);
+    explicit LockCursorToScreenAction(IEventQueue *events, Mode = kToggle);
 
     Mode getMode() const;
 
@@ -161,7 +161,7 @@ public:
       restart
     };
 
-    RestartServer(IEventQueue *events, Mode = restart);
+    explicit RestartServer(Mode = restart);
 
     Mode getMode() const;
 
@@ -172,7 +172,6 @@ public:
 
   private:
     Mode m_mode;
-    IEventQueue *m_events;
   };
 
   // SwitchToScreenAction
@@ -211,6 +210,21 @@ public:
     IEventQueue *m_events;
   };
 
+  // SwitchToNextScreenAction
+  class SwitchToNextScreenAction : public Action
+  {
+  public:
+    explicit SwitchToNextScreenAction(IEventQueue *events);
+
+    // Action overrides
+    Action *clone() const override;
+    std::string format() const override;
+    void perform(const Event &) override;
+
+  private:
+    IEventQueue *m_events;
+  };
+
   // KeyboardBroadcastAction
   class KeyboardBroadcastAction : public Action
   {
@@ -222,8 +236,8 @@ public:
       kToggle
     };
 
-    KeyboardBroadcastAction(IEventQueue *events, Mode = kToggle);
-    KeyboardBroadcastAction(IEventQueue *events, Mode, const std::set<std::string> &screens);
+    explicit KeyboardBroadcastAction(IEventQueue *events, Mode = kToggle);
+    explicit KeyboardBroadcastAction(IEventQueue *events, Mode, const std::set<std::string> &screens);
 
     Mode getMode() const;
     std::set<std::string> getScreens() const;

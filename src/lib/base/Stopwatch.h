@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "common/Common.h"
-
 //! A timer class
 /*!
 This class measures time intervals.  All time interval measurement
@@ -66,8 +64,6 @@ public:
   returns zero if the trigger is set).
   */
   double getTime();
-  //! Same as getTime()
-  operator double();
   //@}
   //! @name accessors
   //@{
@@ -85,8 +81,6 @@ public:
   stopwatch to start and will not clear the trigger.
   */
   double getTime() const;
-  //! Same as getTime() const
-  operator double() const;
   //@}
 
 private:

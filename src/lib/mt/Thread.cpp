@@ -10,8 +10,8 @@
 #include "arch/Arch.h"
 #include "base/IJob.h"
 #include "base/Log.h"
-#include "mt/XMT.h"
-#include "mt/XThread.h"
+#include "mt/MTException.h"
+#include "mt/ThreadException.h"
 #include <exception>
 
 //
@@ -24,7 +24,7 @@ Thread::Thread(IJob *job)
   if (m_thread == nullptr) {
     // couldn't create thread
     delete job;
-    throw XMTThreadUnavailable();
+    throw MTThreadUnavailableException();
   }
 }
 
@@ -57,7 +57,7 @@ Thread &Thread::operator=(const Thread &thread)
 
 [[noreturn]] void Thread::exit(void *result)
 {
-  throw XThreadExit(result);
+  throw ThreadExitException(result);
 }
 
 void Thread::cancel()
@@ -125,28 +125,28 @@ void *Thread::threadFunc(void *vjob)
   void *result = nullptr;
   try {
     // go
-    LOG((CLOG_DEBUG1 "thread 0x%08x entry", id));
+    LOG_DEBUG1("thread 0x%08x entry", id);
     job->run();
-    LOG((CLOG_DEBUG1 "thread 0x%08x exit", id));
-  } catch (XThreadCancel &) {
+    LOG_DEBUG1("thread 0x%08x exit", id);
+  } catch (ThreadCancelException &) {
     // client called cancel()
-    LOG((CLOG_DEBUG1 "caught cancel on thread 0x%08x", id));
+    LOG_DEBUG1("caught cancel on thread 0x%08x", id);
     delete job;
     throw;
-  } catch (XThreadExit &e) {
+  } catch (ThreadExitException &e) {
     // client called exit()
     result = e.m_result;
-    LOG((CLOG_DEBUG1 "caught exit on thread 0x%08x, result %p", id, result));
-  } catch (XBase &e) {
-    LOG((CLOG_ERR "exception on thread 0x%08x: %s", id, e.what()));
+    LOG_DEBUG1("caught exit on thread 0x%08x, result %p", id, result);
+  } catch (BaseException &e) {
+    LOG_ERR("exception on thread 0x%08x: %s", id, e.what());
     delete job;
     throw;
   } catch (std::exception &e) {
-    LOG((CLOG_ERR "standard exception on thread 0x%08x: %s", id, e.what()));
+    LOG_ERR("standard exception on thread 0x%08x: %s", id, e.what());
     delete job;
     throw;
   } catch (...) {
-    LOG((CLOG_ERR "non-exception throw on thread 0x%08x: <unknown>", id));
+    LOG_ERR("non-exception throw on thread 0x%08x: <unknown>", id);
     delete job;
     throw;
   }

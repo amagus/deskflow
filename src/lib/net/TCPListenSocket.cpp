@@ -8,15 +8,15 @@
 #include "net/TCPListenSocket.h"
 
 #include "arch/Arch.h"
-#include "arch/XArch.h"
+#include "arch/ArchException.h"
 #include "base/IEventQueue.h"
 #include "base/Log.h"
-#include "io/XIO.h"
+#include "io/IOException.h"
 #include "net/NetworkAddress.h"
+#include "net/SocketException.h"
 #include "net/SocketMultiplexer.h"
 #include "net/TCPSocket.h"
 #include "net/TSocketMultiplexerMethodJob.h"
-#include "net/XSocket.h"
 
 //
 // TCPListenSocket
@@ -30,8 +30,8 @@ TCPListenSocket::TCPListenSocket(
 {
   try {
     m_socket = ARCH->newSocket(family, IArchNetwork::SocketType::Stream);
-  } catch (XArchNetwork &e) {
-    throw XSocketCreate(e.what());
+  } catch (ArchNetworkException &e) {
+    throw SocketCreateException(e.what());
   }
 }
 
@@ -44,15 +44,23 @@ TCPListenSocket::~TCPListenSocket()
     }
   } catch (...) {
     // ignore
-    LOG((CLOG_WARN "error while closing TCP socket"));
+    LOG_WARN("error while closing TCP socket");
   }
 }
 
 void TCPListenSocket::bind(const NetworkAddress &addr)
 {
+  LOG_DEBUG("binding to address: %s:%d", addr.getHostname().c_str(), addr.getPort());
   try {
     std::scoped_lock lock{m_mutex};
+
+#if SYSAPI_UNIX
+    // Only reuse socket addr on Unix so we can restart the server quickly (Unix holds the port
+    // in TIME_WAIT for a few mins after close). This is not needed on Windows and can cause issues
+    // because binding to a re-use port makes it look like the server is listening when it is not.
     ARCH->setReuseAddrOnSocket(m_socket, true);
+#endif
+
     ARCH->bindSocket(m_socket, addr.getAddress());
     ARCH->listenOnSocket(m_socket);
     m_socketMultiplexer->addSocket(
@@ -60,10 +68,10 @@ void TCPListenSocket::bind(const NetworkAddress &addr)
                   this, &TCPListenSocket::serviceListening, m_socket, true, false
               )
     );
-  } catch (XArchNetworkAddressInUse &e) {
-    throw XSocketAddressInUse(e.what());
-  } catch (XArchNetwork &e) {
-    throw XSocketBind(e.what());
+  } catch (ArchNetworkAddressInUseException &e) {
+    throw SocketAddressInUseException(e.what());
+  } catch (ArchNetworkException &e) {
+    throw SocketBindException(e.what());
   }
 }
 
@@ -71,14 +79,14 @@ void TCPListenSocket::close()
 {
   std::scoped_lock lock{m_mutex};
   if (m_socket == nullptr) {
-    throw XIOClosed();
+    throw IOClosedException();
   }
   try {
     m_socketMultiplexer->removeSocket(this);
     ARCH->closeSocket(m_socket);
     m_socket = nullptr;
-  } catch (XArchNetwork &e) {
-    throw XSocketIOClose(e.what());
+  } catch (ArchNetworkException &e) {
+    throw SocketIOCloseException(e.what());
   }
 }
 
@@ -94,7 +102,7 @@ std::unique_ptr<IDataSocket> TCPListenSocket::accept()
     socket = std::make_unique<TCPSocket>(m_events, m_socketMultiplexer, ARCH->acceptSocket(m_socket, nullptr));
     setListeningJob();
     return socket;
-  } catch (XArchNetwork &) {
+  } catch (ArchNetworkException &) {
     if (socket) {
       setListeningJob();
     }

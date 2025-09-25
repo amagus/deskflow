@@ -21,6 +21,8 @@ const auto kCopyright = //
     "Copyright (C) 2009-2012 Nick Bolton\n"
     "Copyright (C) 2002-2009 Chris Schoeneman";
 
+const auto kCoreBinName = "@CORE_BINARY@";
+
 #ifndef NDEBUG
 const auto kDebugBuild = true;
 #else
@@ -40,17 +42,8 @@ const auto kWindowsRuntimeMajor = @REQUIRED_MSVC_RUNTIME_MAJOR@;
 const auto kWindowsRuntimeMinor = @REQUIRED_MSVC_RUNTIME_MINOR@;
 // clang-format on
 
-const auto kWindowsRegistryKey = "SOFTWARE\\@CMAKE_PROJECT_PROPER_NAME@";
-const auto kCloseEventName = "Global\\@CMAKE_PROJECT_PROPER_NAME@Close";
-const auto kSendSasEventName = "Global\\@CMAKE_PROJECT_PROPER_NAME@SendSAS";
-
-const auto kClientBinName = "@CMAKE_PROJECT_NAME@-client.exe";
-const auto kServerBinName = "@CMAKE_PROJECT_NAME@-server.exe";
-
-#else
-
-const auto kClientBinName = "@CMAKE_PROJECT_NAME@-client";
-const auto kServerBinName = "@CMAKE_PROJECT_NAME@-server";
+constexpr auto kWindowsRegistryKey = L"SOFTWARE\\@CMAKE_PROJECT_PROPER_NAME@";
+constexpr auto kCloseEventName = L"Global\\@CMAKE_PROJECT_PROPER_NAME@Close";
+constexpr auto kSendSasEventName = L"Global\\@CMAKE_PROJECT_PROPER_NAME@SendSAS";
 
 #endif
-

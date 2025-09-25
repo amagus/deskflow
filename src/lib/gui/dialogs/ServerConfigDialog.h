@@ -9,7 +9,7 @@
 #pragma once
 
 #include "ScreenSetupModel.h"
-#include "ServerConfig.h"
+#include "config/ServerConfig.h"
 
 #include <QDialog>
 
@@ -33,7 +33,7 @@ public Q_SLOTS:
   void reject() override;
   void message(const QString &message)
   {
-    m_Message = message;
+    m_message = message;
   }
 
 protected Q_SLOTS:
@@ -46,12 +46,12 @@ protected:
   void addHotkey();
   void editHotkey();
   void removeHotkey();
-  void listHotkeysSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+  void listHotkeysSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected [[maybe_unused]]);
 
   void addAction();
   void editAction();
   void removeAction();
-  void listActionsSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+  void listActionsSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected [[maybe_unused]]);
 
   void toggleSwitchDoubleTap(bool enable);
   void setSwitchDoubleTap(int within);
@@ -82,25 +82,25 @@ protected:
 
   ServerConfig &serverConfig()
   {
-    return m_ServerConfig;
+    return m_serverConfig;
   }
   void setOriginalServerConfig(const ServerConfig &s)
   {
-    m_OriginalServerConfig = s;
+    m_originalServerConfig = s;
   }
   ScreenSetupModel &model()
   {
-    return m_ScreenSetupModel;
+    return m_screenSetupModel;
   }
 
 private:
   std::unique_ptr<Ui::ServerConfigDialog> ui;
-  ServerConfig &m_OriginalServerConfig;
-  ServerConfig m_ServerConfig;
-  bool m_OriginalServerConfigIsExternal;
-  QString m_OriginalServerConfigUsesExternalFile;
-  ScreenSetupModel m_ScreenSetupModel;
-  QString m_Message = "";
+  QString m_message = "";
+  ServerConfig &m_originalServerConfig;
+  bool m_originalServerConfigIsExternal;
+  QString m_originalServerConfigUsesExternalFile;
+  ServerConfig m_serverConfig;
+  ScreenSetupModel m_screenSetupModel;
 
 private Q_SLOTS:
   void onChange();

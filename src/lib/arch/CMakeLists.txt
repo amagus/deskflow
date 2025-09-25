@@ -40,15 +40,15 @@ add_library(arch STATIC ${PLATFORM_CODE}
   Arch.h
   ArchDaemonNone.cpp
   ArchDaemonNone.h
+  ArchException.h
   IArchDaemon.h
   IArchLog.h
   IArchMultithread.h
   IArchNetwork.h
-  ArchString.cpp
-  ArchString.h
-  XArch.h
 )
 
+target_link_libraries (arch PUBLIC common)
+
 if(UNIX)
-  target_link_libraries(arch ${libs})
+  target_link_libraries(arch PUBLIC ${libs})
 endif()

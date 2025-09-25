@@ -6,6 +6,7 @@
 
 #include "CoreProcess.h"
 
+#include "common/ExitCodes.h"
 #include "common/Settings.h"
 #include "gui/ipc/DaemonIpcClient.h"
 #include "tls/TlsUtility.h"
@@ -19,6 +20,7 @@
 #include <QFile>
 #include <QMessageBox>
 #include <QMutexLocker>
+#include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTimer>
@@ -115,43 +117,23 @@ QString wrapIpv6(const QString &address)
   return address;
 }
 
-//
-// CoreProcess::Deps
-//
-
-QString CoreProcess::Deps::appPath(const QString &name) const
+QString getAppFilePath(const QString &name)
 {
   QDir dir(QCoreApplication::applicationDirPath());
   return dir.filePath(name);
-}
-
-bool CoreProcess::Deps::fileExists(const QString &path) const
-{
-  return QFile::exists(path);
 }
 
 //
 // CoreProcess
 //
 
-CoreProcess::CoreProcess(const IServerConfig &serverConfig, std::shared_ptr<Deps> deps)
+CoreProcess::CoreProcess(const IServerConfig &serverConfig)
     : m_serverConfig(serverConfig),
-      m_pDeps(deps),
       m_daemonIpcClient{new ipc::DaemonIpcClient(this)}
 {
   connect(m_daemonIpcClient, &ipc::DaemonIpcClient::connected, this, &CoreProcess::daemonIpcClientConnected);
   connect(
       m_daemonIpcClient, &ipc::DaemonIpcClient::connectionFailed, this, &CoreProcess::daemonIpcClientConnectionFailed
-  );
-
-  connect(&m_pDeps->process(), &QProcessProxy::finished, this, &CoreProcess::onProcessFinished);
-
-  connect(
-      &m_pDeps->process(), &QProcessProxy::readyReadStandardOutput, this, &CoreProcess::onProcessReadyReadStandardOutput
-  );
-
-  connect(
-      &m_pDeps->process(), &QProcessProxy::readyReadStandardError, this, &CoreProcess::onProcessReadyReadStandardError
   );
 
   connect(&m_retryTimer, &QTimer::timeout, this, [this] {
@@ -165,15 +147,15 @@ CoreProcess::CoreProcess(const IServerConfig &serverConfig, std::shared_ptr<Deps
 
 void CoreProcess::onProcessReadyReadStandardOutput()
 {
-  if (m_pDeps->process()) {
-    handleLogLines(m_pDeps->process().readAllStandardOutput());
+  if (m_process) {
+    handleLogLines(m_process->readAllStandardOutput());
   }
 }
 
 void CoreProcess::onProcessReadyReadStandardError()
 {
-  if (m_pDeps->process()) {
-    handleLogLines(m_pDeps->process().readAllStandardError());
+  if (m_process) {
+    handleLogLines(m_process->readAllStandardError());
   }
 }
 
@@ -196,28 +178,32 @@ void CoreProcess::daemonIpcClientConnected()
 
 void CoreProcess::onProcessFinished(int exitCode, QProcess::ExitStatus)
 {
-  const auto wasStarted = m_processState == ProcessState::Started;
-
+  using enum ProcessState;
   setConnectionState(ConnectionState::Disconnected);
 
-  if (exitCode == 0) {
-    qDebug("desktop process exited normally");
-  } else {
-    qWarning("desktop process exited with error code: %d", exitCode);
+  if (m_retryTimer.isActive()) {
+    m_retryTimer.stop();
   }
 
-  if (wasStarted) {
+  if (exitCode == s_exitDuplicate) {
+    setProcessState(Stopped);
+    qWarning("desktop process is already running");
+    return;
+  }
+
+  if (exitCode != s_exitSuccess) {
+    qWarning("desktop process exited with code: %d", exitCode);
+  } else {
+    qDebug("desktop process exited normally");
+  }
+
+  if (const auto wasStarted = m_processState == Started; wasStarted) {
     qDebug("desktop process was running, retrying in %d ms", kRetryDelay);
-
-    if (m_retryTimer.isActive()) {
-      m_retryTimer.stop();
-    }
-
-    setProcessState(ProcessState::RetryPending);
+    setProcessState(RetryPending);
     m_retryTimer.setSingleShot(true);
     m_retryTimer.start(kRetryDelay);
   } else {
-    setProcessState(ProcessState::Stopped);
+    setProcessState(Stopped);
   }
 }
 
@@ -245,9 +231,9 @@ void CoreProcess::startForegroundProcess(const QString &app, const QStringList &
   const auto quoted = makeQuotedArgs(app, args);
   qInfo("running command: %s", qPrintable(quoted));
 
-  m_pDeps->process().start(app, args);
+  m_process->start(app, args);
 
-  if (m_pDeps->process().waitForStarted()) {
+  if (m_process->waitForStarted()) {
     setProcessState(Started);
   } else {
     setProcessState(Stopped);
@@ -279,15 +265,15 @@ void CoreProcess::stopForegroundProcess() const
     qFatal("core process must be in stopping state");
   }
 
-  if (!m_pDeps->process()) {
+  if (!m_process) {
     qFatal("process not set, cannot stop");
   }
 
   qInfo("stopping core desktop process");
 
-  if (m_pDeps->process().state() == QProcess::ProcessState::Running) {
+  if (m_process->state() == QProcess::ProcessState::Running) {
     qDebug("process is running, closing");
-    m_pDeps->process().close();
+    m_process->close();
   } else {
     qDebug("process is not running, skipping terminate");
   }
@@ -330,6 +316,8 @@ void CoreProcess::handleLogLines(const QString &text)
 
 void CoreProcess::start(std::optional<ProcessMode> processModeOption)
 {
+  using enum Settings::CoreMode;
+
   QMutexLocker locker(&m_processMutex);
 
   const auto currentMode = Settings::value(Settings::Core::ProcessMode).value<ProcessMode>();
@@ -358,18 +346,37 @@ void CoreProcess::start(std::optional<ProcessMode> processModeOption)
   setConnectionState(ConnectionState::Connecting);
 
   if (processMode == ProcessMode::Desktop) {
-    m_pDeps->process().create();
+    m_process = new QProcess(this);
+    connect(m_process, &QProcess::finished, this, &CoreProcess::onProcessFinished, Qt::UniqueConnection);
+    connect(
+        m_process, &QProcess::readyReadStandardOutput, this, &CoreProcess::onProcessReadyReadStandardOutput,
+        Qt::UniqueConnection
+    );
+    connect(
+        m_process, &QProcess::readyReadStandardError, this, &CoreProcess::onProcessReadyReadStandardError,
+        Qt::UniqueConnection
+    );
   }
 
   QString app;
   QStringList args;
-  addGenericArgs(args, processMode);
 
-  if (mode() == Settings::CoreMode::Server && !addServerArgs(args, app)) {
+  addGenericArgs(args);
+
+  if (mode() == Server && !addServerArgs(args, app)) {
     qWarning("failed to add server args for core process, aborting start");
     return;
-  } else if (mode() == Settings::CoreMode::Client && !addClientArgs(args, app)) {
+  } else if (mode() == Client && !addClientArgs(args, app)) {
     qWarning("failed to add client args for core process, aborting start");
+    return;
+  }
+
+  if (mode() == Server) {
+    args.prepend("server");
+  } else if (mode() == Client) {
+    args.prepend("client");
+  } else {
+    qFatal("core started without mode");
     return;
   }
 
@@ -452,10 +459,9 @@ void CoreProcess::cleanup()
   }
 }
 
-bool CoreProcess::addGenericArgs(QStringList &args, const ProcessMode processMode) const
+bool CoreProcess::addGenericArgs(QStringList &args) const
 {
-  args << "-f"
-       << "--debug" << Settings::logLevelText();
+  args << "--debug" << Settings::logLevelText();
 
   args << "--name" << Settings::value(Settings::Core::ScreenName).toString();
 
@@ -472,9 +478,9 @@ bool CoreProcess::addGenericArgs(QStringList &args, const ProcessMode processMod
 
 bool CoreProcess::addServerArgs(QStringList &args, QString &app)
 {
-  app = m_pDeps->appPath(Settings::value(Settings::Server::Binary).toString());
+  app = getAppFilePath(Settings::value(Settings::Server::Binary).toString());
 
-  if (!m_pDeps->fileExists(app)) {
+  if (!QFile::exists(app)) {
     qFatal("core server binary does not exist");
     return false;
   }
@@ -518,9 +524,9 @@ bool CoreProcess::addServerArgs(QStringList &args, QString &app)
 
 bool CoreProcess::addClientArgs(QStringList &args, QString &app)
 {
-  app = m_pDeps->appPath(Settings::value(Settings::Client::Binary).toString());
+  app = getAppFilePath(Settings::value(Settings::Client::Binary).toString());
 
-  if (!m_pDeps->fileExists(app)) {
+  if (!QFile::exists(app)) {
     qFatal("core client binary does not exist");
     return false;
   }

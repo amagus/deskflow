@@ -23,7 +23,7 @@ namespace deskflow {
 class EiEventQueueBuffer : public IEventQueueBuffer
 {
 public:
-  EiEventQueueBuffer(const EiScreen *screen, ei *ei, IEventQueue *events);
+  EiEventQueueBuffer(ei *ei, IEventQueue *events);
   ~EiEventQueueBuffer() override;
 
   // IEventQueueBuffer overrides
@@ -31,7 +31,7 @@ public:
   {
     // do nothing
   }
-  void waitForEvent(double timeout_in_ms) override;
+  void waitForEvent(double msTimeout) override;
   Type getEvent(Event &event, uint32_t &dataID) override;
   bool addEvent(uint32_t dataID) override;
   bool isEmpty() const override;

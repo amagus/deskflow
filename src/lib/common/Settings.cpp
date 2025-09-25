@@ -81,7 +81,7 @@ QVariant Settings::defaultValue(const QString &key)
 
   if ((key == Gui::CloseToTray) || (key == Gui::LogExpanded) || (key == Gui::SymbolicTrayIcon) ||
       (key == Gui::CloseReminder) || (key == Security::TlsEnabled) || (key == Security::CheckPeers) ||
-      (key == Client::LanguageSync)) {
+      (key == Client::LanguageSync) || (key == Gui::ShowGenericClientFailureDialog)) {
     return true;
   }
 
@@ -101,13 +101,13 @@ QVariant Settings::defaultValue(const QString &key)
     return QStringLiteral("%1/%2").arg(QDir::homePath(), kDefaultLogFile);
 
   if (key == Log::Level)
-    return 0;
+    return 4; // INFO
 
   if (key == Client::Binary)
-    return kClientBinName;
+    return kCoreBinName;
 
   if (key == Server::Binary)
-    return kServerBinName;
+    return kCoreBinName;
 
   if (key == Daemon::Elevate)
     return Settings::isNativeMode();

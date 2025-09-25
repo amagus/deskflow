@@ -21,11 +21,11 @@
 #include "base/String.h"
 #include "common/Settings.h"
 #include "common/UrlConstants.h"
-#include "gui/Logger.h"
 #include "gui/Messages.h"
 #include "gui/Styles.h"
 #include "gui/core/CoreProcess.h"
 #include "gui/ipc/DaemonIpcClient.h"
+#include "gui/widgets/LogDock.h"
 #include "net/FingerprintDatabase.h"
 #include "platform/Wayland.h"
 
@@ -33,6 +33,7 @@
 #include "Config.h"
 #endif
 
+#include <QCloseEvent>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QLocalServer>
@@ -45,7 +46,9 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
+#include <QScreen>
 #include <QScrollBar>
+#include <QToolButton>
 
 #include <memory>
 
@@ -68,6 +71,7 @@ MainWindow::MainWindow()
       m_trayIcon{new QSystemTrayIcon(this)},
       m_guiDupeChecker{new QLocalServer(this)},
       m_daemonIpcClient{new ipc::DaemonIpcClient(this)},
+      m_logDock{new LogDock(this)},
       m_lblSecurityStatus{new QLabel(this)},
       m_lblStatus{new QLabel(this)},
       m_btnFingerprint{new QToolButton(this)},
@@ -88,18 +92,15 @@ MainWindow::MainWindow()
 
   setWindowIcon(QIcon::fromTheme(QStringLiteral("deskflow")));
 
-  // setup the log font
-  ui->textLog->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-#ifdef Q_OS_MAC
-  auto f = ui->textLog->font();
-  f.setPixelSize(12);
-  ui->textLog->setFont(f);
-#endif
+  addDockWidget(Qt::BottomDockWidgetArea, m_logDock);
 
   // Setup Actions
   m_actionAbout->setText(tr("About %1...").arg(kAppName));
   m_actionAbout->setMenuRole(QAction::AboutRole);
   m_actionAbout->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::HelpAbout));
+
+  m_actionMinimize->setIcon(QIcon::fromTheme(QStringLiteral("window-minimize-pip")));
+  m_actionRestore->setIcon(QIcon::fromTheme(QStringLiteral("window-restore-pip")));
 
 #ifndef Q_OS_WIN
   m_actionQuit->setShortcut(QKeySequence::Quit);
@@ -130,13 +131,9 @@ MainWindow::MainWindow()
 
   m_actionReportBug->setIcon(QIcon(QIcon::fromTheme(QStringLiteral("tools-report-bug"))));
 
-#ifdef Q_OS_MAC
-  ui->btnToggleLog->setFixedHeight(ui->lblLog->height() * 0.6);
-#endif
-
   // Setup the Instance Checking
   // In case of a previous crash remove first
-  m_guiDupeChecker->removeServer(m_guiSocketName);
+  QLocalServer::removeServer(m_guiSocketName);
   m_guiDupeChecker->listen(m_guiSocketName);
 
   createMenuBar();
@@ -150,8 +147,6 @@ MainWindow::MainWindow()
   restoreWindow();
 
   qDebug().noquote() << "active settings path:" << Settings::settingsPath();
-
-  updateSize();
 
   // Force generation of SHA256 for the localhost
   if (Settings::value(Settings::Security::TlsEnabled).toBool()) {
@@ -183,34 +178,23 @@ MainWindow::~MainWindow()
 
 void MainWindow::restoreWindow()
 {
-  const auto windowGeometry = Settings::value(Settings::Gui::WindowGeometry).toRect();
+  auto windowGeometry = Settings::value(Settings::Gui::WindowGeometry).toRect();
+  const auto totalGeometry = QGuiApplication::primaryScreen()->availableGeometry();
   if (!windowGeometry.isValid()) {
-    // center main window in middle of screen
-    const auto screen = QGuiApplication::primaryScreen();
-    QRect screenGeometry = screen->geometry();
+    adjustSize();
+    windowGeometry = geometry();
+  } else {
+    setGeometry(windowGeometry);
+  }
+  m_expandedSize = geometry().size();
+
+  if (!totalGeometry.contains(windowGeometry)) {
+    QRect screenGeometry = QGuiApplication::primaryScreen()->geometry();
     move(screenGeometry.center() - rect().center());
-    return;
   }
 
-  m_expandedSize = windowGeometry.size();
-
-  int x = 0;
-  int y = 0;
-  int w = 0;
-  int h = 0;
-  const auto screens = QGuiApplication::screens();
-  for (auto screen : screens) {
-    auto geo = screen->geometry();
-    x = std::min(geo.x(), x);
-    y = std::min(geo.y(), y);
-    w = std::max(geo.x() + geo.width(), w);
-    h = std::max(geo.y() + geo.height(), h);
-  }
-  const QRect screensGeometry(x, y, w, h);
-  if (screensGeometry.contains(windowGeometry)) {
-    qDebug() << "restoring main window position";
-    move(windowGeometry.topLeft());
-  }
+  if (!Settings::value(Settings::Gui::LogExpanded).toBool())
+    setFixedSize(size());
 }
 
 void MainWindow::setupControls()
@@ -220,20 +204,15 @@ void MainWindow::setupControls()
   secureSocket(false);
 
   ui->btnConfigureServer->setIcon(QIcon::fromTheme(QStringLiteral("configure")));
-  ui->lblIpAddresses->setText(tr("This computer's IP addresses: %1").arg(getIPAddresses()));
+
+  updateNetworkInfo();
 
   if (Settings::value(Settings::Core::LastVersion).toString() != kVersion) {
     Settings::setValue(Settings::Core::LastVersion, kVersion);
   }
 
-  // Setup the log toggle, set its initial state to closed
-  ui->btnToggleLog->setStyleSheet(kStyleFlatButton);
-  if (Settings::value(Settings::Gui::LogExpanded).toBool()) {
-    ui->btnToggleLog->setArrowType(Qt::DownArrow);
-    ui->textLog->setVisible(true);
-    ui->btnToggleLog->click();
-  } else {
-    ui->textLog->setVisible(false);
+  if (!Settings::value(Settings::Gui::LogExpanded).toBool()) {
+    m_logDock->hide();
   }
 
   ui->serverOptions->setVisible(false);
@@ -293,8 +272,6 @@ void MainWindow::setupControls()
 // signal is emitted from the thread that owns the receiver's object.
 void MainWindow::connectSlots()
 {
-  connect(&Logger::instance(), &Logger::newLine, this, &MainWindow::handleLogLine);
-
   connect(Settings::instance(), &Settings::serverSettingsChanged, this, &MainWindow::serverConfigSaving);
   connect(Settings::instance(), &Settings::settingsChanged, this, &MainWindow::settingsChanged);
 
@@ -339,9 +316,8 @@ void MainWindow::connectSlots()
 
   connect(ui->btnToggleCore, &QPushButton::clicked, m_actionStartCore, &QAction::trigger, Qt::UniqueConnection);
   connect(ui->btnRestartCore, &QPushButton::clicked, this, &MainWindow::resetCore);
-  connect(ui->btnConnect, &QPushButton::clicked, this, &MainWindow::resetCore);
 
-  connect(ui->lineHostname, &QLineEdit::returnPressed, ui->btnConnect, &QPushButton::click);
+  connect(ui->lineHostname, &QLineEdit::returnPressed, ui->btnRestartCore, &QPushButton::click);
   connect(ui->lineHostname, &QLineEdit::textChanged, this, &MainWindow::remoteHostChanged);
 
   connect(ui->btnSaveServerConfig, &QPushButton::clicked, this, &MainWindow::saveServerConfig);
@@ -352,7 +328,7 @@ void MainWindow::connectSlots()
   connect(ui->rbModeServer, &QRadioButton::toggled, this, &MainWindow::coreModeToggled);
   connect(ui->rbModeClient, &QRadioButton::toggled, this, &MainWindow::coreModeToggled);
 
-  connect(ui->btnToggleLog, &QAbstractButton::toggled, this, &MainWindow::toggleLogVisible);
+  connect(m_logDock->toggleViewAction(), &QAction::toggled, this, &MainWindow::toggleLogVisible);
 
   connect(m_btnUpdate, &QPushButton::clicked, this, &MainWindow::openGetNewVersionUrl);
 
@@ -365,16 +341,33 @@ void MainWindow::connectSlots()
 
 void MainWindow::toggleLogVisible(bool visible)
 {
-  if (visible) {
-    ui->btnToggleLog->setArrowType(Qt::DownArrow);
-  } else {
-    ui->btnToggleLog->setArrowType(Qt::RightArrow);
-    m_expandedSize = size();
+  // When the main window is hidden (e.g. close to tray), this also triggers the log visibility toggle,
+  // but we don't want to hide the log in this case since we would need to un-hide it when the window is shown again.
+  if (!isVisible()) {
+    qDebug() << "not toggling log, window not visible";
+    return;
   }
-  ui->textLog->setVisible(visible);
+
+  setFixedSize(16777215, 16777215);
   Settings::setValue(Settings::Gui::LogExpanded, visible);
-  // 15 ms delay is to make sure we have left the function before calling updateSize
-  QTimer::singleShot(15, this, &MainWindow::updateSize);
+  if (visible) {
+    if (m_logDock->isFloating()) {
+      adjustSize();
+      setFixedSize(size());
+    } else {
+      QTimer::singleShot(15, this, [&] { resize(m_expandedSize); });
+    }
+  } else {
+    if (!m_logDock->isFloating()) {
+      m_expandedSize = geometry().size();
+    }
+    m_logDock->hide();
+    if (!m_logDock->isFloating()) {
+      adjustSize();
+    }
+    setFixedSize(size());
+  }
+  Settings::setValue(Settings::Gui::WindowGeometry, geometry());
 }
 
 void MainWindow::settingsChanged(const QString &key)
@@ -511,43 +504,9 @@ void MainWindow::resetCore()
   m_coreProcess.restart();
 }
 
-void MainWindow::updateSize()
-{
-  if (Settings::value(Settings::Gui::LogExpanded).toBool()) {
-    setMaximumSize(16777215, 16777215);
-    resize(m_expandedSize);
-  } else {
-    adjustSize();
-    // Prevent Resize with log collapsed
-    setMaximumSize(width(), height());
-  }
-}
-
 void MainWindow::showMyFingerprint()
 {
-  if (!QFile::exists(Settings::tlsLocalDb())) {
-    if (regenerateLocalFingerprints())
-      showMyFingerprint();
-    return;
-  }
-
-  FingerprintDatabase db;
-  db.read(Settings::tlsLocalDb());
-  if (db.fingerprints().isEmpty()) {
-    if (regenerateLocalFingerprints())
-      showMyFingerprint();
-    return;
-  }
-
-  Fingerprint sha256Print;
-  for (const auto &f : std::as_const(db.fingerprints())) {
-    if (f.type == Fingerprint::Type::SHA256) {
-      sha256Print = f;
-      break;
-    }
-  }
-
-  FingerprintDialog fingerprintDialog(this, sha256Print);
+  FingerprintDialog fingerprintDialog(this, localFingerprint());
   fingerprintDialog.exec();
 }
 
@@ -560,13 +519,13 @@ void MainWindow::coreModeToggled()
 
   const auto coreMode = serverMode ? Settings::CoreMode::Server : Settings::CoreMode::Client;
   Settings::setValue(Settings::Core::CoreMode, coreMode);
-
   Settings::save();
   updateModeControls(serverMode);
 }
 
 void MainWindow::updateModeControls(bool serverMode)
 {
+  ui->lblIpAddresses->setVisible(serverMode);
   ui->serverOptions->setVisible(serverMode);
   ui->clientOptions->setVisible(!serverMode);
   ui->lblNoMode->setVisible(false);
@@ -586,8 +545,45 @@ void MainWindow::updateModeControls(bool serverMode)
       m_coreProcess.start();
     }
   }
+  updateModeControlLabels();
 
   toggleCanRunCore((!serverMode && !ui->lineHostname->text().isEmpty()) || serverMode);
+}
+
+void MainWindow::updateModeControlLabels()
+{
+  const bool isServer = m_coreProcess.mode() == CoreMode::Server;
+  const bool isStarted = m_coreProcess.isStarted();
+
+  QString startText;
+  QString stopText;
+  QIcon startIcon;
+  QIcon stopIcon;
+
+  if (isServer) {
+    startText = tr("Start");
+    stopText = tr("Stop");
+    startIcon = QIcon::fromTheme(QStringLiteral("system-run"));
+    stopIcon = QIcon::fromTheme(QIcon::ThemeIcon::ProcessStop);
+  } else {
+    startText = tr("Connect");
+    stopText = tr("Disconnect");
+    startIcon = QIcon::fromTheme(QStringLiteral("network-connect"));
+    stopIcon = QIcon::fromTheme(QStringLiteral("network-disconnect"));
+  }
+
+  m_actionStartCore->setText(startText);
+  m_actionStartCore->setIcon(startIcon);
+  m_actionStopCore->setText(stopText);
+  m_actionStopCore->setIcon(stopIcon);
+
+  if (isStarted) {
+    ui->btnToggleCore->setText(stopText);
+    ui->btnToggleCore->setIcon(stopIcon);
+  } else {
+    ui->btnToggleCore->setText(startText);
+    ui->btnToggleCore->setIcon(startIcon);
+  }
 }
 
 void MainWindow::updateSecurityIcon(bool visible)
@@ -604,6 +600,48 @@ void MainWindow::updateSecurityIcon(bool visible)
 
   const auto icon = QIcon::fromTheme(secureSocket ? QIcon::ThemeIcon::SecurityHigh : QIcon::ThemeIcon::SecurityLow);
   m_lblSecurityStatus->setPixmap(icon.pixmap(QSize(32, 32)));
+}
+
+void MainWindow::updateNetworkInfo()
+{
+  static const auto colorText = QStringLiteral(R"(<span style="color:%1;">%2</span>)");
+
+  QStringList ipList;
+  QString suggestedAddress;
+
+  bool hinted = false;
+
+  const auto addresses = QNetworkInterface::allAddresses();
+  for (const auto &address : addresses) {
+    if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost) &&
+        !address.isInSubnet(QHostAddress::parseSubnet("169.254.0.0/16"))) {
+      // usually 192.168.x.x is a useful ip for the user, so indicate
+      // this by coloring it in the "link" color
+      if (!hinted && address.isInSubnet(QHostAddress::parseSubnet("192.168/16"))) {
+        suggestedAddress = address.toString();
+        ipList.append(colorText.arg(palette().link().color().name(), suggestedAddress));
+        hinted = true;
+      } else {
+        ipList.append(address.toString());
+      }
+    }
+  }
+
+  if (ipList.isEmpty()) {
+    ui->lblIpAddresses->setText(colorText.arg(palette().linkVisited().color().name(), tr("No IP Detected")));
+    ui->lblIpAddresses->setToolTip(tr("Unable to detect an IP address. Check your network connection is active."));
+    return;
+  }
+
+  ui->lblIpAddresses->setText(
+      QStringLiteral("Suggested IP: %1").arg(suggestedAddress.isEmpty() ? ipList.first() : suggestedAddress)
+  );
+
+  if (auto toolTipBase = tr("<p>If connecting via the hostname fails, try %1</p>"); ipList.count() < 2) {
+    ui->lblIpAddresses->setToolTip(toolTipBase.arg(tr("the suggested IP.")));
+  } else {
+    ui->lblIpAddresses->setToolTip(toolTipBase.arg(tr("one of the following IPs:<br/>%1").arg(ipList.join("br/>"))));
+  }
 }
 
 void MainWindow::serverConnectionConfigureClient(const QString &clientName)
@@ -676,6 +714,9 @@ void MainWindow::createMenuBar()
   auto menuEdit = new QMenu(tr("&Edit"), this);
   menuEdit->addAction(m_actionSettings);
 
+  auto menuView = new QMenu(tr("&View"), this);
+  menuView->addAction(m_logDock->toggleViewAction());
+
   auto menuHelp = new QMenu(tr("&Help"), this);
   menuHelp->addAction(m_actionAbout);
   menuHelp->addAction(m_actionReportBug);
@@ -685,6 +726,7 @@ void MainWindow::createMenuBar()
   auto menuBar = new QMenuBar(this);
   menuBar->addMenu(menuFile);
   menuBar->addMenu(menuEdit);
+  menuBar->addMenu(menuView);
   menuBar->addMenu(menuHelp);
 
   setMenuBar(menuBar);
@@ -753,21 +795,7 @@ void MainWindow::setIcon()
 
 void MainWindow::handleLogLine(const QString &line)
 {
-  const int kScrollBottomThreshold = 2;
-
-  QScrollBar *verticalScroll = ui->textLog->verticalScrollBar();
-  int currentScroll = verticalScroll->value();
-  int maxScroll = verticalScroll->maximum();
-  const auto scrollAtBottom = qAbs(currentScroll - maxScroll) <= kScrollBottomThreshold;
-
-  // Never trim the log line; doing so would hide underlying bugs where newlines and space is added unintentionally.
-  ui->textLog->appendPlainText(line);
-
-  if (scrollAtBottom) {
-    verticalScroll->setValue(verticalScroll->maximum());
-    ui->textLog->horizontalScrollBar()->setValue(0);
-  }
-
+  m_logDock->appendLine(line);
   updateFromLogLine(line);
 }
 
@@ -820,10 +848,8 @@ void MainWindow::checkFingerprint(const QString &line)
     m_checkedClients.append(sha256Text);
   }
 
-  auto dialogMode = isClient ? FingerprintDialogMode::Client : FingerprintDialogMode::Server;
-
-  FingerprintDialog fingerprintDialog(this, sha256, dialogMode);
-  connect(&fingerprintDialog, &FingerprintDialog::requestLocalPrintsDialog, this, &MainWindow::showMyFingerprint);
+  auto mode = isClient ? FingerprintDialogMode::Client : FingerprintDialogMode::Server;
+  FingerprintDialog fingerprintDialog(this, localFingerprint(), mode, sha256);
 
   if (fingerprintDialog.exec() == QDialog::Accepted) {
     db.addTrusted(sha256);
@@ -863,6 +889,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
     Settings::setValue(Settings::Gui::WindowGeometry, geometry());
   }
   qDebug() << "quitting application";
+
+  // any connected dock view acitons will be triggered
+  // disconnect them before accepting the event
+  disconnect(m_logDock->toggleViewAction(), &QAction::toggled, nullptr, nullptr);
+
   event->accept();
   QApplication::quit();
 }
@@ -958,9 +989,6 @@ void MainWindow::coreProcessStateChanged(CoreProcessState state)
     disconnect(ui->btnToggleCore, &QPushButton::clicked, m_actionStartCore, &QAction::trigger);
     connect(ui->btnToggleCore, &QPushButton::clicked, m_actionStopCore, &QAction::trigger, Qt::UniqueConnection);
 
-    ui->btnToggleCore->setText(tr("&Stop"));
-    ui->btnToggleCore->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ProcessStop));
-
     ui->btnRestartCore->setEnabled(true);
     m_actionStartCore->setVisible(false);
     m_actionRestartCore->setVisible(true);
@@ -970,14 +998,12 @@ void MainWindow::coreProcessStateChanged(CoreProcessState state)
     disconnect(ui->btnToggleCore, &QPushButton::clicked, m_actionStopCore, &QAction::trigger);
     connect(ui->btnToggleCore, &QPushButton::clicked, m_actionStartCore, &QAction::trigger, Qt::UniqueConnection);
 
-    ui->btnToggleCore->setText(tr("&Start"));
-    ui->btnToggleCore->setIcon(QIcon::fromTheme(QStringLiteral("system-run")));
-
     ui->btnRestartCore->setEnabled(false);
     m_actionStartCore->setVisible(true);
     m_actionRestartCore->setVisible(false);
     m_actionStopCore->setEnabled(false);
   }
+  updateModeControlLabels();
 }
 
 void MainWindow::coreConnectionStateChanged(CoreConnectionState state)
@@ -994,36 +1020,6 @@ void MainWindow::coreConnectionStateChanged(CoreConnectionState state)
   } else if (isVisible()) {
     showFirstConnectedMessage();
   }
-}
-
-QString MainWindow::getIPAddresses() const
-{
-  QStringList result;
-  bool hinted = false;
-  const auto localnet = QHostAddress::parseSubnet("192.168.0.0/16");
-  const QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
-
-  for (const auto &address : addresses) {
-    if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost) &&
-        !address.isInSubnet(QHostAddress::parseSubnet("169.254.0.0/16"))) {
-
-      // usually 192.168.x.x is a useful ip for the user, so indicate
-      // this by making it bold.
-      if (!hinted && address.isInSubnet(localnet)) {
-        QString format = R"(<span style="color:%1;">%2</span>)";
-        result.append(format.arg(kColorTertiary, address.toString()));
-        hinted = true;
-      } else {
-        result.append(address.toString());
-      }
-    }
-  }
-
-  if (result.isEmpty()) {
-    result.append("Unknown");
-  }
-
-  return result.join(", ");
 }
 
 void MainWindow::updateLocalFingerprint()
@@ -1106,7 +1102,14 @@ void MainWindow::setHostName()
 
   QString text = ui->lineEditName->text();
   const auto screenName = Settings::value(Settings::Core::ScreenName).toString();
-  bool existingScreen = serverConfig().screenExists(text) && (text != screenName);
+
+  if (text == screenName)
+    return;
+
+  const bool isServer = ui->rbModeServer->isChecked();
+  bool existingScreen = false;
+  if (isServer)
+    existingScreen = serverConfig().screenExists(text);
 
   if (!ui->lineEditName->hasAcceptableInput() || text.isEmpty() || existingScreen) {
     blockSignals(true);
@@ -1131,6 +1134,8 @@ void MainWindow::setHostName()
 
   ui->lblComputerName->setText(ui->lineEditName->text());
   Settings::setValue(Settings::Core::ScreenName, ui->lineEditName->text());
+  if (isServer)
+    serverConfig().updateServerName();
   applyConfig();
 }
 
@@ -1153,6 +1158,30 @@ bool MainWindow::regenerateLocalFingerprints()
 
   updateLocalFingerprint();
   return true;
+}
+
+Fingerprint MainWindow::localFingerprint()
+{
+  if (!QFile::exists(Settings::tlsLocalDb())) {
+    if (regenerateLocalFingerprints())
+      return localFingerprint();
+  }
+
+  FingerprintDatabase db;
+  db.read(Settings::tlsLocalDb());
+  if (db.fingerprints().isEmpty()) {
+    if (regenerateLocalFingerprints())
+      return localFingerprint();
+  }
+
+  Fingerprint sha256Print;
+  for (const auto &f : std::as_const(db.fingerprints())) {
+    if (f.type == Fingerprint::Type::SHA256) {
+      sha256Print = f;
+      break;
+    }
+  }
+  return sha256Print;
 }
 
 void MainWindow::serverClientsChanged(const QStringList &clients)
@@ -1196,7 +1225,6 @@ void MainWindow::daemonIpcClientConnectionFailed()
 void MainWindow::toggleCanRunCore(bool enableButtons)
 {
   ui->btnToggleCore->setEnabled(enableButtons);
-  ui->btnConnect->setEnabled(enableButtons);
   ui->btnRestartCore->setEnabled(enableButtons && m_coreProcess.isStarted());
   m_actionStartCore->setEnabled(enableButtons);
   m_actionStopCore->setEnabled(enableButtons);

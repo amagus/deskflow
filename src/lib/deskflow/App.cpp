@@ -13,10 +13,11 @@
 #include "base/Log.h"
 #include "base/LogOutputters.h"
 #include "common/Constants.h"
+#include "common/ExitCodes.h"
 #include "deskflow/ArgsBase.h"
 #include "deskflow/Config.h"
+#include "deskflow/DeskflowException.h"
 #include "deskflow/ProtocolTypes.h"
-#include "deskflow/XDeskflow.h"
 
 #if SYSAPI_WIN32
 #include "base/IEventQueue.h"
@@ -64,7 +65,7 @@ void App::version()
   std::vector<char> buffer(kBufferLength);
   std::snprintf(                                                   // NOSONAR
       buffer.data(), kBufferLength, "%s v%s, protocol v%d.%d\n%s", //
-      argsBase().m_pname, kVersion, kProtocolMajorVersion, kProtocolMinorVersion, kCopyright
+      argsBase().m_pname, kDisplayVersion, kProtocolMajorVersion, kProtocolMinorVersion, kCopyright
   );
 
   std::cout << std::string(buffer.data()) << std::endl;
@@ -92,23 +93,23 @@ int App::run(int argc, char **argv)
 
   try {
     result = appUtil().run(argc, argv);
-  } catch (XExitApp &e) {
+  } catch (ExitAppException &e) {
     // instead of showing a nasty error, just exit with the error code.
     // not sure if i like this behaviour, but it's probably better than
     // using the exit(int) function!
     result = e.getCode();
   } catch (DisplayInvalidException &die) {
-    LOG((CLOG_CRIT "a display invalid exception error occurred: %s\n", die.what()));
+    LOG_CRIT("a display invalid exception error occurred: %s\n", die.what());
     // display invalid exceptions can occur when going to sleep. When this
     // process exits, the UI will restart us instantly. We don't really want
     // that behevior, so we quies for a bit
     Arch::sleep(10);
   } catch (std::runtime_error &re) {
-    LOG((CLOG_CRIT "a runtime error occurred: %s\n", re.what()));
+    LOG_CRIT("a runtime error occurred: %s\n", re.what());
   } catch (std::exception &e) {
-    LOG((CLOG_CRIT "an error occurred: %s\n", e.what()));
+    LOG_CRIT("an error occurred: %s\n", e.what());
   } catch (...) {
-    LOG((CLOG_CRIT "an unknown error occurred\n"));
+    LOG_CRIT("an unknown error occurred\n");
   }
 
   return result;
@@ -129,7 +130,7 @@ void App::setupFileLogging()
   if (argsBase().m_logFile != nullptr) {
     m_fileLog = new FileLogOutputter(argsBase().m_logFile); // NOSONAR - Adopted by `Log`
     CLOG->insert(m_fileLog);
-    LOG((CLOG_DEBUG1 "logging to file (%s) enabled", argsBase().m_logFile));
+    LOG_DEBUG1("logging to file (%s) enabled", argsBase().m_logFile);
   }
 }
 
@@ -182,6 +183,12 @@ void App::initApp(int argc, const char **argv)
 
   // load configuration
   loadConfig();
+}
+
+void App::handleScreenError() const
+{
+  LOG_CRIT("error on screen");
+  getEvents()->addEvent(Event(EventTypes::Quit));
 }
 
 void App::runEventsLoop(void *)

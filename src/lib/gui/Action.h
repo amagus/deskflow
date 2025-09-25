@@ -1,5 +1,6 @@
 /*
  * Deskflow -- mouse and keyboard sharing utility
+ * SPDX-FileCopyrightText: (C) 2025 Deskflow Developers
  * SPDX-FileCopyrightText: (C) 2012 - 2016 Symless Ltd.
  * SPDX-FileCopyrightText: (C) 2008 Volker Lanz <vl@fidra.de>
  * SPDX-License-Identifier: GPL-2.0-only WITH LicenseRef-OpenSSL-Exception
@@ -35,31 +36,32 @@ class Action
   friend QTextStream &operator<<(QTextStream &outStream, const Action &action);
 
 public:
-  enum ActionType
+  enum class Type
   {
     keyDown,
     keyUp,
     keystroke,
     switchToScreen,
     switchInDirection,
+    switchToNextScreen,
     lockCursorToScreen,
     restartAllConnections,
     mouseDown,
     mouseUp,
     mousebutton,
   };
-  enum SwitchDirection
+  enum class SwitchDirection
   {
-    switchLeft,
-    switchRight,
-    switchUp,
-    switchDown
+    left,
+    right,
+    up,
+    down
   };
-  enum LockCursorMode
+  enum class LockCursorMode
   {
-    lockCursorToggle,
-    lockCursonOn,
-    lockCursorOff
+    toggle,
+    on,
+    off
   };
 
 public:
@@ -105,7 +107,7 @@ public:
     return m_restartServer;
   }
 
-  bool operator==(const Action &a) const;
+  bool operator==(const Action &a) const = default;
 
 protected:
   KeySequence &keySequence()
@@ -151,22 +153,28 @@ protected:
 
 private:
   KeySequence m_keySequence;
-  int m_type = keystroke;
+  int m_type = static_cast<int>(Type::keystroke);
   QStringList m_typeScreenNames = QStringList();
   QString m_switchScreenName = QString();
-  int m_switchDirection = switchLeft;
-  int m_lockCursorMode = lockCursorToggle;
+  int m_switchDirection = static_cast<int>(SwitchDirection::left);
+  int m_lockCursorMode = static_cast<int>(LockCursorMode::toggle);
   bool m_activeOnRelease = false;
   bool m_hasScreens = false;
   bool m_restartServer;
 
   inline static const QString m_commandTemplate = QStringLiteral("(%1)");
   inline static const QStringList m_actionTypeNames{
-      QStringLiteral("keyDown"),           QStringLiteral("keyUp"),
-      QStringLiteral("keystroke"),         QStringLiteral("switchToScreen"),
-      QStringLiteral("switchInDirection"), QStringLiteral("lockCursorToScreen"),
-      QStringLiteral("restartServer"),     QStringLiteral("mouseDown"),
-      QStringLiteral("mouseUp"),           QStringLiteral("mousebutton")
+      QStringLiteral("keyDown"),
+      QStringLiteral("keyUp"),
+      QStringLiteral("keystroke"),
+      QStringLiteral("switchToScreen"),
+      QStringLiteral("switchInDirection"),
+      QStringLiteral("switchToNextScreen"),
+      QStringLiteral("lockCursorToScreen"),
+      QStringLiteral("restartServer"),
+      QStringLiteral("mouseDown"),
+      QStringLiteral("mouseUp"),
+      QStringLiteral("mousebutton")
   };
 
   inline static const QStringList m_switchDirectionNames{

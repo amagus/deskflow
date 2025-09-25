@@ -21,19 +21,19 @@
 
 #include <filesystem>
 
-AppUtilUnix::AppUtilUnix(const IEventQueue *events)
+AppUtilUnix::AppUtilUnix(const IEventQueue *)
 {
   // do nothing
 }
 
-int standardStartupStatic(int argc, char **argv)
+int startStatic(int argc, char **argv)
 {
-  return AppUtil::instance().app().standardStartup(argc, argv);
+  return AppUtil::instance().app().start(argc, argv);
 }
 
 int AppUtilUnix::run(int argc, char **argv)
 {
-  return app().runInner(argc, argv, &standardStartupStatic);
+  return app().runInner(argc, argv, &startStatic);
 }
 
 void AppUtilUnix::startNode()
@@ -92,13 +92,13 @@ std::string AppUtilUnix::getCurrentLanguageCode()
 
   auto display = XOpenDisplay(nullptr);
   if (!display) {
-    LOG((CLOG_WARN "failed to open x11 default display"));
+    LOG_WARN("failed to open x11 default display");
     return result;
   }
 
   auto kbdDescr = XkbAllocKeyboard();
   if (!kbdDescr) {
-    LOG((CLOG_WARN "failed to get x11 keyboard description"));
+    LOG_WARN("failed to get x11 keyboard description");
     return result;
   }
   XkbGetNames(display, XkbSymbolsNameMask, kbdDescr);
@@ -134,7 +134,7 @@ std::string AppUtilUnix::getCurrentLanguageCode()
   XFree(kbdDescr);
   XCloseDisplay(display);
 
-  result = X11LayoutsParser::convertLayotToISO(m_evdev, result);
+  result = X11LayoutsParser::convertLayoutToISO(m_evdev, result);
 
 #elif WINAPI_CARBON
   auto layoutLanguages =

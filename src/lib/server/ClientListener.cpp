@@ -15,7 +15,7 @@
 #include "net/IDataSocket.h"
 #include "net/IListenSocket.h"
 #include "net/ISocketFactory.h"
-#include "net/XSocket.h"
+#include "net/SocketException.h"
 #include "server/ClientProxy.h"
 #include "server/ClientProxyUnknown.h"
 
@@ -36,16 +36,16 @@ ClientListener::ClientListener(
 
   try {
     start();
-  } catch (XSocketAddressInUse &) {
+  } catch (SocketAddressInUseException &) {
     cleanupListenSocket();
     m_socketFactory.reset();
     throw;
-  } catch (XBase &) {
+  } catch (BaseException &) {
     cleanupListenSocket();
     m_socketFactory.reset();
     throw;
   }
-  LOG((CLOG_DEBUG1 "listening for clients"));
+  LOG_DEBUG1("listening for clients");
 }
 
 ClientListener::~ClientListener()
@@ -81,14 +81,14 @@ void ClientListener::start()
   });
 
   // bind listen address
-  LOG((CLOG_DEBUG1 "binding listen socket"));
+  LOG_DEBUG1("binding listen socket");
   m_listen->bind(m_address);
 }
 
 void ClientListener::stop()
 {
   using enum EventTypes;
-  LOG((CLOG_DEBUG1 "stop listening for clients"));
+  LOG_DEBUG1("stop listening for clients");
 
   // discard already connected clients
   for (auto index = m_newClients.begin(); index != m_newClients.end(); ++index) {
@@ -146,7 +146,7 @@ void ClientListener::handleClientConnecting()
 
 void ClientListener::handleClientAccepted(IDataSocket *socket)
 {
-  LOG((CLOG_NOTE "accepted client connection"));
+  LOG_NOTE("accepted client connection");
 
   // filter socket messages, including a packetizing filter
   deskflow::IStream *stream = new PacketStreamFilter(m_events, socket, false);

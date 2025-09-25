@@ -9,6 +9,7 @@
 #include "arch/Arch.h"
 #include "base/EventQueue.h"
 #include "base/Log.h"
+#include "common/ExitCodes.h"
 #include "common/Settings.h"
 #include "deskflow/DaemonApp.h"
 #include "deskflow/ipc/DaemonIpcServer.h"
@@ -58,12 +59,6 @@ int main(int argc, char **argv)
   const auto foregroundOption = QCommandLineOption({"f", "foreground"}, "Run in the foreground (show console)");
   parser.addOption(foregroundOption);
 
-  const auto installOption = QCommandLineOption({"i", "install"}, "Install as a Windows service");
-  parser.addOption(installOption);
-
-  const auto uninstallOption = QCommandLineOption({"u", "uninstall"}, "Uninstall the Windows service");
-  parser.addOption(uninstallOption);
-
   parser.process(app);
 
   if (parser.isSet(foregroundOption)) {
@@ -78,11 +73,11 @@ int main(int argc, char **argv)
   // useful for troubleshooting Windows services.
   // It's important to write the version number to the log file so we can be certain the old daemon
   // was uninstalled, since sometimes Windows services can get stuck and fail to be removed.
-  LOG_PRINT("%s v%s", QCoreApplication::applicationName().toStdString().c_str(), kDisplayVersion);
+  LOG_PRINT("%s v%s", qPrintable(QCoreApplication::applicationName()), kDisplayVersion);
 
   // Default log level to system setting (found in Registry).
   auto logLevel = Settings::value(Settings::Daemon::LogLevel).toString().toStdString();
-  if (logLevel != "") {
+  if (!logLevel.empty()) {
     CLOG->setFilter(logLevel.c_str());
     LOG_DEBUG("log level: %s", logLevel.c_str());
   }
@@ -96,16 +91,7 @@ int main(int argc, char **argv)
     }
 #endif
 
-    if (parser.isSet(installOption)) {
-      daemon.install();
-      return s_exitSuccess;
-    } else if (parser.isSet(uninstallOption)) {
-      daemon.uninstall();
-      return s_exitSuccess;
-    }
-
-    const auto ipcServer =
-        new ipc::DaemonIpcServer(&app, DaemonApp::logFilename().toStdString().c_str()); // NOSONAR - Qt managed
+    const auto ipcServer = new ipc::DaemonIpcServer(&app, qPrintable(DaemonApp::logFilename())); // NOSONAR - Qt managed
     ipcServer->listen();
     daemon.connectIpcServer(ipcServer);
 

@@ -6,10 +6,15 @@
         <file>icons/deskflow-dark/actions/16/document-open.svg</file>
         <file>icons/deskflow-dark/actions/16/document-save-as.svg</file>
         <file>icons/deskflow-dark/actions/16/help-about.svg</file>
+        <file>icons/deskflow-dark/actions/16/network-connect.svg</file>
+        <file>icons/deskflow-dark/actions/16/network-disconnect.svg</file>
         <file>icons/deskflow-dark/actions/16/process-stop.svg</file>
         <file>icons/deskflow-dark/actions/16/system-run.svg</file>
         <file>icons/deskflow-dark/actions/16/tools-report-bug.svg</file>
+        <file>icons/deskflow-dark/actions/16/view-close.svg</file>
         <file>icons/deskflow-dark/actions/16/view-refresh.svg</file>
+        <file>icons/deskflow-dark/actions/16/window-minimize-pip.svg</file>
+        <file>icons/deskflow-dark/actions/16/window-restore-pip.svg</file>
         <file>icons/deskflow-dark/actions/22/configure.svg</file>
         <file>icons/deskflow-dark/actions/22/edit-copy.svg</file>
         <file>icons/deskflow-dark/actions/22/document-edit.svg</file>
@@ -17,10 +22,15 @@
         <file>icons/deskflow-dark/actions/22/document-save-as.svg</file>
         <file>icons/deskflow-dark/actions/22/fingerprint.svg</file>
         <file>icons/deskflow-dark/actions/22/help-about.svg</file>
+        <file>icons/deskflow-dark/actions/22/network-connect.svg</file>
+        <file>icons/deskflow-dark/actions/22/network-disconnect.svg</file>
         <file>icons/deskflow-dark/actions/22/process-stop.svg</file>
         <file>icons/deskflow-dark/actions/22/system-run.svg</file>
         <file>icons/deskflow-dark/actions/22/tools-report-bug.svg</file>
+        <file>icons/deskflow-dark/actions/22/view-close.svg</file>
         <file>icons/deskflow-dark/actions/22/view-refresh.svg</file>
+        <file>icons/deskflow-dark/actions/22/window-minimize-pip.svg</file>
+        <file>icons/deskflow-dark/actions/22/window-restore-pip.svg</file>
         <file>icons/deskflow-dark/actions/24/configure.svg</file>
         <file>icons/deskflow-dark/actions/24/edit-copy.svg</file>
         <file>icons/deskflow-dark/actions/24/document-edit.svg</file>
@@ -29,10 +39,15 @@
         <file>icons/deskflow-dark/actions/24/edit-clear-all.svg</file>
         <file>icons/deskflow-dark/actions/24/fingerprint.svg</file>
         <file>icons/deskflow-dark/actions/24/help-about.svg</file>
+        <file>icons/deskflow-dark/actions/24/network-connect.svg</file>
+        <file>icons/deskflow-dark/actions/24/network-disconnect.svg</file>
         <file>icons/deskflow-dark/actions/24/process-stop.svg</file>
         <file>icons/deskflow-dark/actions/24/system-run.svg</file>
         <file>icons/deskflow-dark/actions/24/tools-report-bug.svg</file>
+        <file>icons/deskflow-dark/actions/24/view-close.svg</file>
         <file>icons/deskflow-dark/actions/24/view-refresh.svg</file>
+        <file>icons/deskflow-dark/actions/24/window-minimize-pip.svg</file>
+        <file>icons/deskflow-dark/actions/24/window-restore-pip.svg</file>
         <file>icons/deskflow-dark/actions/32/configure.svg</file>
         <file>icons/deskflow-dark/actions/32/application-exit.svg</file>
         <file>icons/deskflow-dark/actions/32/dialog-cancel.svg</file>
@@ -63,10 +78,15 @@
         <file>icons/deskflow-light/actions/16/document-open.svg</file>
         <file>icons/deskflow-light/actions/16/document-save-as.svg</file>
         <file>icons/deskflow-light/actions/16/help-about.svg</file>
+        <file>icons/deskflow-light/actions/16/network-connect.svg</file>
+        <file>icons/deskflow-light/actions/16/network-disconnect.svg</file>
         <file>icons/deskflow-light/actions/16/process-stop.svg</file>
         <file>icons/deskflow-light/actions/16/system-run.svg</file>
         <file>icons/deskflow-light/actions/16/tools-report-bug.svg</file>
+        <file>icons/deskflow-light/actions/16/view-close.svg</file>
         <file>icons/deskflow-light/actions/16/view-refresh.svg</file>
+        <file>icons/deskflow-light/actions/16/window-minimize-pip.svg</file>
+        <file>icons/deskflow-light/actions/16/window-restore-pip.svg</file>
         <file>icons/deskflow-light/actions/22/configure.svg</file>
         <file>icons/deskflow-light/actions/22/edit-clear-all.svg</file>
         <file>icons/deskflow-light/actions/22/edit-copy.svg</file>
@@ -74,11 +94,16 @@
         <file>icons/deskflow-light/actions/22/document-open.svg</file>
         <file>icons/deskflow-light/actions/22/document-save-as.svg</file>
         <file>icons/deskflow-light/actions/22/fingerprint.svg</file>
+        <file>icons/deskflow-light/actions/22/network-connect.svg</file>
+        <file>icons/deskflow-light/actions/22/network-disconnect.svg</file>
         <file>icons/deskflow-light/actions/22/help-about.svg</file>
         <file>icons/deskflow-light/actions/22/process-stop.svg</file>
         <file>icons/deskflow-light/actions/22/system-run.svg</file>
         <file>icons/deskflow-light/actions/22/tools-report-bug.svg</file>
+        <file>icons/deskflow-light/actions/22/view-close.svg</file>
         <file>icons/deskflow-light/actions/22/view-refresh.svg</file>
+        <file>icons/deskflow-light/actions/22/window-minimize-pip.svg</file>
+        <file>icons/deskflow-light/actions/22/window-restore-pip.svg</file>
         <file>icons/deskflow-light/actions/24/configure.svg</file>
         <file>icons/deskflow-light/actions/24/edit-clear-all.svg</file>
         <file>icons/deskflow-light/actions/24/edit-copy.svg</file>
@@ -87,10 +112,15 @@
         <file>icons/deskflow-light/actions/24/document-open.svg</file>
         <file>icons/deskflow-light/actions/24/document-save-as.svg</file>
         <file>icons/deskflow-light/actions/24/help-about.svg</file>
+        <file>icons/deskflow-light/actions/24/network-connect.svg</file>
+        <file>icons/deskflow-light/actions/24/network-disconnect.svg</file>
         <file>icons/deskflow-light/actions/24/process-stop.svg</file>
         <file>icons/deskflow-light/actions/24/system-run.svg</file>
         <file>icons/deskflow-light/actions/24/tools-report-bug.svg</file>
+        <file>icons/deskflow-light/actions/24/view-close.svg</file>
         <file>icons/deskflow-light/actions/24/view-refresh.svg</file>
+        <file>icons/deskflow-light/actions/24/window-minimize-pip.svg</file>
+        <file>icons/deskflow-light/actions/24/window-restore-pip.svg</file>
         <file>icons/deskflow-light/actions/32/configure.svg</file>
         <file>icons/deskflow-light/actions/32/application-exit.svg</file>
         <file>icons/deskflow-light/actions/32/dialog-cancel.svg</file>

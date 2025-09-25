@@ -13,13 +13,13 @@
 #include "base/Stopwatch.h"
 #include "deskflow/Clipboard.h"
 #include "deskflow/ClipboardTypes.h"
-#include "deskflow/INode.h"
 #include "deskflow/KeyTypes.h"
 #include "deskflow/MouseTypes.h"
 #include "deskflow/OptionTypes.h"
 #include "deskflow/ServerArgs.h"
 #include "server/Config.h"
 
+#include <climits>
 #include <map>
 #include <memory>
 #include <set>
@@ -40,7 +40,7 @@ class ClientListener;
 /*!
 This class implements the top-level server algorithms for deskflow.
 */
-class Server : public INode
+class Server
 {
   using ServerConfig = deskflow::server::Config;
 
@@ -126,7 +126,7 @@ public:
   );
   Server(Server const &) = delete;
   Server(Server &&) = delete;
-  ~Server() override;
+  ~Server();
 
   Server &operator=(Server const &) = delete;
   Server &operator=(Server &&) = delete;
@@ -306,6 +306,7 @@ private:
   void handleClientCloseTimeout(BaseClientProxy *client);
   void handleSwitchToScreenEvent(const Event &event);
   void handleSwitchInDirectionEvent(const Event &event);
+  void handleToggleScreenEvent(const Event &);
   void handleKeyboardBroadcastEvent(const Event &event);
   void handleLockCursorToScreenEvent(const Event &event);
 
@@ -356,12 +357,40 @@ private:
     std::string m_clipboardOwner;
     uint32_t m_clipboardSeqNum = 0;
   };
+  // Order suggested by clang
 
-  // used in hello message sent to the client
-  NetworkProtocol m_protocol;
+  // the Primary Screen Client
+  PrimaryClient *m_primaryClient = nullptr;
 
-  // the primary screen client
-  PrimaryClient *m_primaryClient;
+  // the client with focus
+  BaseClientProxy *m_active = nullptr;
+
+  // current configuration
+  ServerConfig *m_config = nullptr;
+
+  // input filter (from m_config);
+  InputFilter *m_inputFilter = nullptr;
+
+  // state saved when screen saver activates
+  BaseClientProxy *m_activeSaver = nullptr;
+
+  BaseClientProxy *m_switchScreen = nullptr;
+  double m_switchWaitDelay = 0.0;
+  EventQueueTimer *m_switchWaitTimer = nullptr;
+
+  // delay for double-tap screen switching
+  double m_switchTwoTapDelay = 0.0;
+
+  // server screen
+  deskflow::Screen *m_screen;
+
+  IEventQueue *m_events = nullptr;
+  size_t m_maximumClipboardSize = INT_MAX;
+  ClientListener *m_clientListener = nullptr;
+  Stopwatch m_switchTwoTapTimer;
+
+  // Name of screen broadcasting the keyboard events
+  std::string m_keyboardBroadcastingScreens;
 
   // all clients (including the primary client) indexed by name
   using ClientList = std::map<std::string, BaseClientProxy *>;
@@ -373,8 +402,13 @@ private:
   using OldClients = std::map<BaseClientProxy *, EventQueueTimer *>;
   OldClients m_oldClients;
 
-  // the client with focus
-  BaseClientProxy *m_active;
+  deskflow::ServerArgs m_args;
+
+  // clipboard cache
+  ClipboardInfo m_clipboards[kClipboardEnd];
+
+  // used in hello message sent to the client
+  NetworkProtocol m_protocol = NetworkProtocol::Barrier;
 
   // the sequence number of enter messages
   uint32_t m_seqNum = 0;
@@ -393,37 +427,21 @@ private:
   int32_t m_xDelta2 = 0;
   int32_t m_yDelta2 = 0;
 
-  // current configuration
-  ServerConfig *m_config;
-
-  // input filter (from m_config);
-  InputFilter *m_inputFilter;
-
-  // clipboard cache
-  ClipboardInfo m_clipboards[kClipboardEnd];
-
-  // state saved when screen saver activates
-  BaseClientProxy *m_activeSaver = nullptr;
   int32_t m_xSaver;
   int32_t m_ySaver;
+
+  // state for delayed screen switching
+  int32_t m_switchWaitX;
+  int32_t m_switchWaitY;
+
+  int32_t m_switchTwoTapZone = 3;
 
   // common state for screen switch tests.  all tests are always
   // trying to reach the same screen in the same direction.
   Direction m_switchDir = Direction::NoDirection;
-  BaseClientProxy *m_switchScreen = nullptr;
 
-  // state for delayed screen switching
-  double m_switchWaitDelay = 0.0;
-  EventQueueTimer *m_switchWaitTimer = nullptr;
-  int32_t m_switchWaitX;
-  int32_t m_switchWaitY;
-
-  // state for double-tap screen switching
-  double m_switchTwoTapDelay = 0.0;
-  Stopwatch m_switchTwoTapTimer;
   bool m_switchTwoTapEngaged = false;
   bool m_switchTwoTapArmed = false;
-  int32_t m_switchTwoTapZone = 3;
 
   // modifiers needed before switching
   bool m_switchNeedsShift = false;
@@ -436,20 +454,10 @@ private:
   // flag whether or not we have broadcasting enabled and the screens to
   // which we should send broadcasted keys.
   bool m_keyboardBroadcasting = false;
-  std::string m_keyboardBroadcastingScreens;
 
   // screen locking (former scroll lock)
   bool m_lockedToScreen = false;
 
-  // server screen
-  deskflow::Screen *m_screen;
-
-  IEventQueue *m_events;
-
   bool m_disableLockToScreen = false;
   bool m_enableClipboard = true;
-  size_t m_maximumClipboardSize = INT_MAX;
-
-  ClientListener *m_clientListener;
-  deskflow::ServerArgs m_args;
 };

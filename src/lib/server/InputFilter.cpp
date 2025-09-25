@@ -13,6 +13,7 @@
 #include "server/PrimaryClient.h"
 #include "server/Server.h"
 
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
@@ -236,7 +237,7 @@ void InputFilter::LockCursorToScreenAction::perform(const Event &event)
   );
 }
 
-InputFilter::RestartServer::RestartServer(IEventQueue *events, Mode mode) : m_mode(mode), m_events(events)
+InputFilter::RestartServer::RestartServer(Mode mode) : m_mode(mode)
 {
   // do nothing
 }
@@ -332,6 +333,28 @@ void InputFilter::SwitchInDirectionAction::perform(const Event &event)
   Server::SwitchInDirectionInfo *info = Server::SwitchInDirectionInfo::alloc(m_direction);
   m_events->addEvent(
       Event(EventTypes::ServerSwitchInDirection, event.getTarget(), info, Event::EventFlags::DeliverImmediately)
+  );
+}
+
+InputFilter::SwitchToNextScreenAction::SwitchToNextScreenAction(IEventQueue *events) : m_events(events)
+{
+  // do nothing
+}
+
+InputFilter::Action *InputFilter::SwitchToNextScreenAction::clone() const
+{
+  return new SwitchToNextScreenAction(*this);
+}
+
+std::string InputFilter::SwitchToNextScreenAction::format() const
+{
+  return "switchToNextScreen()";
+}
+
+void InputFilter::SwitchToNextScreenAction::perform(const Event &event)
+{
+  m_events->addEvent(
+      Event(EventTypes::ServerToggleScreen, event.getTarget(), nullptr, Event::EventFlags::DeliverImmediately)
   );
 }
 
@@ -658,18 +681,18 @@ bool InputFilter::Rule::handleEvent(const Event &event)
 
   case Activate:
     actions = &m_activateActions;
-    LOG((CLOG_DEBUG1 "activate actions"));
+    LOG_DEBUG1("activate actions");
     break;
 
   case Deactivate:
     actions = &m_deactivateActions;
-    LOG((CLOG_DEBUG1 "deactivate actions"));
+    LOG_DEBUG1("deactivate actions");
     break;
   }
 
   // perform actions
   for (auto action : *actions) {
-    LOG((CLOG_DEBUG1 "hotkey: %s", action->format().c_str()));
+    LOG_DEBUG1("hotkey: %s", action->format().c_str());
     action->perform(event);
   }
 

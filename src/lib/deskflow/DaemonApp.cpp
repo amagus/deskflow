@@ -9,6 +9,7 @@
 #include "base/IEventQueue.h"
 #include "base/Log.h"
 #include "base/LogOutputters.h"
+#include "common/ExitCodes.h"
 #include "common/Settings.h"
 #include "deskflow/App.h"
 #include "deskflow/ipc/DaemonIpcServer.h"
@@ -105,42 +106,20 @@ void DaemonApp::connectIpcServer(const ipc::DaemonIpcServer *ipcServer) const
 {
   // Use direct connection as this object is on it's own thread,
   // and so is on a different event loop to the main Qt loop.
-  QObject::connect(
-      ipcServer, &ipc::DaemonIpcServer::logLevelChanged, this, &DaemonApp::saveLogLevel, //
+  connect(ipcServer, &ipc::DaemonIpcServer::logLevelChanged, this, &DaemonApp::saveLogLevel, Qt::DirectConnection);
+  connect(ipcServer, &ipc::DaemonIpcServer::elevateModeChanged, this, &DaemonApp::setElevate, Qt::DirectConnection);
+  connect(ipcServer, &ipc::DaemonIpcServer::commandChanged, this, &DaemonApp::setCommand, Qt::DirectConnection);
+  connect(
+      ipcServer, &ipc::DaemonIpcServer::startProcessRequested, this, &DaemonApp::applyWatchdogCommand,
       Qt::DirectConnection
   );
-  QObject::connect(
-      ipcServer, &ipc::DaemonIpcServer::elevateModeChanged, this, &DaemonApp::setElevate, //
+  connect(
+      ipcServer, &ipc::DaemonIpcServer::stopProcessRequested, this, &DaemonApp::clearWatchdogCommand,
       Qt::DirectConnection
   );
-  QObject::connect(
-      ipcServer, &ipc::DaemonIpcServer::commandChanged, this, &DaemonApp::setCommand, //
-      Qt::DirectConnection
+  connect(
+      ipcServer, &ipc::DaemonIpcServer::clearSettingsRequested, this, &DaemonApp::clearSettings, Qt::DirectConnection
   );
-  QObject::connect(
-      ipcServer, &ipc::DaemonIpcServer::startProcessRequested, this, &DaemonApp::applyWatchdogCommand, //
-      Qt::DirectConnection
-  );
-  QObject::connect(
-      ipcServer, &ipc::DaemonIpcServer::stopProcessRequested, this, &DaemonApp::clearWatchdogCommand, //
-      Qt::DirectConnection
-  );
-  QObject::connect(
-      ipcServer, &ipc::DaemonIpcServer::clearSettingsRequested, this, &DaemonApp::clearSettings, //
-      Qt::DirectConnection
-  );
-}
-
-void DaemonApp::install() const
-{
-  LOG_NOTE("installing windows daemon");
-  ARCH->installDaemon();
-}
-
-void DaemonApp::uninstall() const
-{
-  LOG_NOTE("uninstalling windows daemon");
-  ARCH->uninstallDaemon();
 }
 
 void DaemonApp::run(QThread &daemonThread)
@@ -151,7 +130,7 @@ void DaemonApp::run(QThread &daemonThread)
   // owned by the daemon app, as they will be created on the daemon thread.
   moveToThread(&daemonThread);
 
-  QObject::connect(&daemonThread, &QThread::started, [this, &daemonThread]() {
+  connect(&daemonThread, &QThread::started, this, [this, &daemonThread]() {
     LOG_DEBUG("daemon thread started");
 
     if (m_foreground) {
@@ -216,9 +195,9 @@ int DaemonApp::mainLoop()
     LOG_INFO("daemon is running");
     m_events.loop();
   } catch (std::exception &e) { // NOSONAR - Catching all exceptions
-    LOG((CLOG_CRIT "daemon error: %s", e.what()));
+    LOG_CRIT("daemon error: %s", e.what());
   } catch (...) { // NOSONAR - Catching remaining exceptions
-    LOG((CLOG_CRIT "daemon unknown error"));
+    LOG_CRIT("daemon unknown error");
   }
 
   LOG_INFO("daemon is stopping");
@@ -228,9 +207,9 @@ int DaemonApp::mainLoop()
     LOG_DEBUG("stopping process watchdog");
     m_pWatchdog->stop();
   } catch (std::exception &e) { // NOSONAR - Catching all exceptions
-    LOG((CLOG_CRIT "daemon stop watchdog error: %s", e.what()));
+    LOG_CRIT("daemon stop watchdog error: %s", e.what());
   } catch (...) { // NOSONAR - Catching remaining exceptions
-    LOG((CLOG_CRIT "daemon stop watchdog unknown error"));
+    LOG_CRIT("daemon stop watchdog unknown error");
   }
 #endif
 
@@ -259,7 +238,7 @@ void DaemonApp::initLogging()
   }
 #endif
 
-  m_pFileLogOutputter = new FileLogOutputter(logFilename().toStdString().c_str()); // NOSONAR - Adopted by `Log`
+  m_pFileLogOutputter = new FileLogOutputter(qPrintable(logFilename())); // NOSONAR - Adopted by `Log`
   CLOG->insert(m_pFileLogOutputter);
 }
 

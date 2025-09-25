@@ -64,8 +64,7 @@ public:
   deskflow::Screen *createScreen() override;
   int mainLoop() override;
   int runInner(int argc, char **argv, StartupFunc startup) override;
-  int standardStartup(int argc, char **argv) override;
-  int foregroundStartup(int argc, char **argv) override;
+  int start(int argc, char **argv) override;
   void startNode() override;
 
   //
@@ -87,8 +86,6 @@ public:
   void handleClientConnected(const Event &e, ClientListener *listener);
   void closeServer(Server *server);
   void stopRetryTimer();
-  void updateStatus() const;
-  void updateStatus(const std::string_view &msg) const;
   void closeClientListener(ClientListener *listen);
   void stopServer();
   void closePrimaryClient(PrimaryClient *primaryClient);
@@ -98,7 +95,6 @@ public:
   void retryHandler();
   deskflow::Screen *openServerScreen();
   PrimaryClient *openPrimaryClient(const std::string &name, deskflow::Screen *screen);
-  void handleScreenError();
   void handleSuspend();
   void handleResume();
   ClientListener *openClientListener(const NetworkAddress &address);
