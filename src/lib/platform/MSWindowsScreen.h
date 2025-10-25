@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "deskflow/ClientArgs.h"
 #include "deskflow/PlatformScreen.h"
 #include "platform/MSWindowsHook.h"
 #include "platform/MSWindowsPowerManager.h"
@@ -31,8 +30,7 @@ class MSWindowsScreen : public PlatformScreen
 {
 public:
   MSWindowsScreen(
-      bool isPrimary, bool noHooks, IEventQueue *events, bool enableLangSync = false,
-      deskflow::ClientScrollDirection scrollDirection = deskflow::ClientScrollDirection::Normal
+      bool isPrimary, bool useHooks, IEventQueue *events, bool enableLangSync = false, bool invetScrolling = false
   );
   ~MSWindowsScreen() override;
 
@@ -255,7 +253,7 @@ private:
   bool m_isPrimary;
 
   // true if hooks are not to be installed (useful for debugging)
-  bool m_noHooks;
+  bool m_useHooks;
 
   // true if mouse has entered the screen
   bool m_isOnScreen;

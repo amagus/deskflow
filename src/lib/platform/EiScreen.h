@@ -33,10 +33,7 @@ class PortalInputCapture;
 class EiScreen : public PlatformScreen
 {
 public:
-  EiScreen(
-      bool isPrimary, IEventQueue *events, bool usePortal,
-      deskflow::ClientScrollDirection scrollDirection = deskflow::ClientScrollDirection::Normal
-  );
+  EiScreen(bool isPrimary, IEventQueue *events, bool usePortal, bool invertScrolling = false);
   ~EiScreen() override;
 
   // IScreen overrides
@@ -159,10 +156,10 @@ private:
   {
   public:
     HotKeyItem(std::uint32_t mask, std::uint32_t id);
-    bool operator<(const HotKeyItem &other) const
+    auto operator<=>(const HotKeyItem &other) const
     {
-      return mask < other.mask;
-    };
+      return mask <=> other.mask;
+    }
 
   public:
     std::uint32_t mask = 0;
@@ -176,7 +173,7 @@ private:
     KeyID keyid() const
     {
       return m_id;
-    };
+    }
     bool removeById(std::uint32_t id);
     void addItem(HotKeyItem item);
     std::uint32_t findByMask(std::uint32_t mask) const;

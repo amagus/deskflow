@@ -24,39 +24,29 @@ class ISocketFactory;
 class ClientApp : public App
 {
 public:
-  explicit ClientApp(IEventQueue *events);
+  explicit ClientApp(IEventQueue *events, const QString &processName = QString());
   ~ClientApp() override = default;
 
   //
   // IApp overrides
   //
 
-  void parseArgs(int argc, const char *const *argv) override;
-  void help() override;
+  void parseArgs() override;
   const char *daemonName() const override;
   const char *daemonInfo() const override;
   void loadConfig() override
   {
     // do nothing
   }
-  bool loadConfig(const std::string &pathname) override
+  bool loadConfig(const std::string &) override
   {
     return false;
   }
-  int start(int argc, char **argv) override;
-  int runInner(int argc, char **argv, StartupFunc startup) override;
+  int start() override;
+  int runInner(StartupFunc startup) override;
   deskflow::Screen *createScreen() override;
   int mainLoop() override;
   void startNode() override;
-
-  //
-  // App overrides
-  //
-
-  std::string configSection() const override
-  {
-    return "client";
-  }
 
   //
   // Regular functions
@@ -76,11 +66,6 @@ public:
   Client *getClientPtr()
   {
     return m_client;
-  }
-
-  deskflow::ClientArgs &args() const
-  {
-    return (deskflow::ClientArgs &)argsBase();
   }
 
   //

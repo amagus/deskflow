@@ -14,6 +14,7 @@
 #include "base/Log.h"
 #include "base/Stopwatch.h"
 #include "common/Constants.h"
+#include "common/Settings.h"
 #include "deskflow/App.h"
 #include "deskflow/Clipboard.h"
 #include "deskflow/KeyMap.h"
@@ -39,8 +40,8 @@ struct ScrollRemainder
 
 namespace deskflow {
 
-EiScreen::EiScreen(bool isPrimary, IEventQueue *events, bool usePortal, deskflow::ClientScrollDirection scrollDirection)
-    : PlatformScreen{events, scrollDirection},
+EiScreen::EiScreen(bool isPrimary, IEventQueue *events, bool usePortal, bool invertScrolling)
+    : PlatformScreen{events, invertScrolling},
       m_isPrimary{isPrimary},
       m_events{events},
       m_w{1},
@@ -76,7 +77,7 @@ EiScreen::EiScreen(bool isPrimary, IEventQueue *events, bool usePortal, deskflow
   }
 
   // disable sleep if the flag is set
-  if (App::instance().argsBase().m_preventSleep) {
+  if (Settings::value(Settings::Core::PreventSleep).toBool()) {
     m_powerManager.disableSleep();
   }
 }
@@ -164,7 +165,7 @@ void *EiScreen::getEventTarget() const
   return const_cast<void *>(static_cast<const void *>(this));
 }
 
-bool EiScreen::getClipboard(ClipboardID id, IClipboard *clipboard) const
+bool EiScreen::getClipboard(ClipboardID, IClipboard *) const
 {
   return false;
 }
@@ -243,7 +244,7 @@ std::int32_t EiScreen::getJumpZoneSize() const
   return 1;
 }
 
-bool EiScreen::isAnyMouseButtonDown(uint32_t &buttonID) const
+bool EiScreen::isAnyMouseButtonDown(uint32_t &) const
 {
   return false;
 }
@@ -384,7 +385,7 @@ void EiScreen::leave()
   m_isOnScreen = false;
 }
 
-bool EiScreen::setClipboard(ClipboardID id, const IClipboard *clipboard)
+bool EiScreen::setClipboard(ClipboardID, const IClipboard *)
 {
   return false;
 }
@@ -730,7 +731,7 @@ void EiScreen::handlePortalSessionClosed()
   initEi();
 }
 
-void EiScreen::handleSystemEvent(const Event &sysevent)
+void EiScreen::handleSystemEvent(const Event &)
 {
   std::scoped_lock lock{m_mutex};
 

@@ -38,7 +38,6 @@ class QPushButton;
 class QTextEdit;
 class QComboBox;
 class QTabWidget;
-class QToolButton;
 class QCheckBox;
 class QRadioButton;
 class QMessageBox;
@@ -90,12 +89,14 @@ public:
 
   void hide();
 
+protected:
+  void changeEvent(QEvent *e) override;
+
 private:
   void toggleLogVisible(bool visible);
 
   void settingsChanged(const QString &key = QString());
   void serverConfigSaving();
-  void coreProcessStarting();
   void coreProcessError(CoreProcess::Error error);
   void coreConnectionStateChanged(CoreProcess::ConnectionState state);
   void coreProcessStateChanged(CoreProcess::ProcessState state);
@@ -125,7 +126,7 @@ private:
   void createMenuBar();
   void setupTrayIcon();
   void applyConfig();
-  void setIcon();
+  void setTrayIcon();
   void setStatus(const QString &status);
   void updateFromLogLine(const QString &line);
   void checkConnected(const QString &line);
@@ -188,7 +189,7 @@ private:
   LogDock *m_logDock;
   QLabel *m_lblSecurityStatus = nullptr;
   QLabel *m_lblStatus = nullptr;
-  QToolButton *m_btnFingerprint = nullptr;
+  QPushButton *m_btnFingerprint = nullptr;
   QPushButton *m_btnUpdate = nullptr;
 
   // Window Actions

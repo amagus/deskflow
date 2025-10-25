@@ -16,7 +16,6 @@
 #include "base/LogOutputters.h"
 #include "common/Constants.h"
 #include "deskflow/App.h"
-#include "deskflow/ArgsBase.h"
 #include "deskflow/DeskflowException.h"
 #include "deskflow/Screen.h"
 #include "platform/MSWindowsScreen.h"
@@ -61,9 +60,9 @@ static int mainLoopStatic()
   return AppUtil::instance().app().mainLoop();
 }
 
-int AppUtilWindows::daemonNTMainLoop(int argc, const char **argv)
+int AppUtilWindows::daemonNTMainLoop()
 {
-  app().initApp(argc, argv);
+  app().initApp();
 
   return ArchMiscWindows::runDaemon(mainLoopStatic);
 }
@@ -81,29 +80,29 @@ void AppUtilWindows::exitApp(int code)
   }
 }
 
-int daemonNTMainLoopStatic(int argc, const char **argv)
+int daemonNTMainLoopStatic()
 {
-  return AppUtilWindows::instance().daemonNTMainLoop(argc, argv);
+  return AppUtilWindows::instance().daemonNTMainLoop();
 }
 
-int AppUtilWindows::daemonNTStartup(int, char **)
+int AppUtilWindows::daemonNTStartup()
 {
   SystemLogger sysLogger(app().daemonName(), false);
   m_exitMode = kExitModeDaemon;
-  return ARCH->daemonize(app().daemonName(), daemonNTMainLoopStatic);
+  return ARCH->daemonize(daemonNTMainLoopStatic);
 }
 
-static int daemonNTStartupStatic(int argc, char **argv)
+static int daemonNTStartupStatic()
 {
-  return AppUtilWindows::instance().daemonNTStartup(argc, argv);
+  return AppUtilWindows::instance().daemonNTStartup();
 }
 
-static int foregroundStartupStatic(int argc, char **argv)
+static int foregroundStartupStatic()
 {
-  return AppUtil::instance().app().start(argc, argv);
+  return AppUtil::instance().app().start();
 }
 
-int AppUtilWindows::run(int argc, char **argv)
+int AppUtilWindows::run()
 {
   if (!IsWindowsXPSP3OrGreater()) {
     throw std::runtime_error("unsupported os version, xp sp3 or greater required");
@@ -122,7 +121,7 @@ int AppUtilWindows::run(int argc, char **argv)
     startup = &foregroundStartupStatic;
   }
 
-  return app().runInner(argc, argv, startup);
+  return app().runInner(startup);
 }
 
 AppUtilWindows &AppUtilWindows::instance()

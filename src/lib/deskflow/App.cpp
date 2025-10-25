@@ -14,8 +14,7 @@
 #include "base/LogOutputters.h"
 #include "common/Constants.h"
 #include "common/ExitCodes.h"
-#include "deskflow/ArgsBase.h"
-#include "deskflow/Config.h"
+#include "common/Settings.h"
 #include "deskflow/DeskflowException.h"
 #include "deskflow/ProtocolTypes.h"
 
@@ -33,7 +32,9 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
-#include <CLI/CLI.hpp>
+#if defined(WINAPI_XWINDOWS) or defined(WINAPI_LIBEI)
+#include "platform/XDGPortalRegistry.h"
+#endif
 
 using namespace deskflow;
 
@@ -43,35 +44,25 @@ App *App::s_instance = nullptr;
 // App
 //
 
-App::App(IEventQueue *events, deskflow::ArgsBase *args)
+App::App(IEventQueue *events, const QString &processName)
     : m_bye(&exit),
       m_events(events),
-      m_args(args),
-      m_appUtil(events)
+      m_appUtil(events),
+      m_pname(processName)
 {
   assert(s_instance == nullptr);
   s_instance = this;
+#if defined(WINAPI_XWINDOWS) or defined(WINAPI_LIBEI)
+  deskflow::platform::setAppId();
+#endif
 }
 
 App::~App()
 {
   s_instance = nullptr;
-  delete m_args;
 }
 
-void App::version()
-{
-  const auto kBufferLength = 1024;
-  std::vector<char> buffer(kBufferLength);
-  std::snprintf(                                                   // NOSONAR
-      buffer.data(), kBufferLength, "%s v%s, protocol v%d.%d\n%s", //
-      argsBase().m_pname, kDisplayVersion, kProtocolMajorVersion, kProtocolMinorVersion, kCopyright
-  );
-
-  std::cout << std::string(buffer.data()) << std::endl;
-}
-
-int App::run(int argc, char **argv)
+int App::run()
 {
 #if MAC_OS_X_VERSION_10_7
   // dock hide only supported on lion :(
@@ -92,7 +83,7 @@ int App::run(int argc, char **argv)
   int result = s_exitFailed;
 
   try {
-    result = appUtil().run(argc, argv);
+    result = appUtil().run();
   } catch (ExitAppException &e) {
     // instead of showing a nasty error, just exit with the error code.
     // not sure if i like this behaviour, but it's probably better than
@@ -127,53 +118,36 @@ int App::daemonMainLoop(int, const char **)
 
 void App::setupFileLogging()
 {
-  if (argsBase().m_logFile != nullptr) {
-    m_fileLog = new FileLogOutputter(argsBase().m_logFile); // NOSONAR - Adopted by `Log`
-    CLOG->insert(m_fileLog);
-    LOG_DEBUG1("logging to file (%s) enabled", argsBase().m_logFile);
+  if (Settings::value(Settings::Log::ToFile).toBool()) {
+    if (const auto file = Settings::value(Settings::Log::File).toString(); !file.isEmpty()) {
+      const auto logFile = qPrintable(file);
+      m_fileLog = new FileLogOutputter(logFile); // NOSONAR - Adopted by `Log`
+      CLOG->insert(m_fileLog);
+      LOG_DEBUG1("logging to file (%s) enabled", logFile);
+    }
   }
 }
 
 void App::loggingFilterWarning() const
 {
-  if ((CLOG->getFilter() > CLOG->getConsoleMaxLevel()) && (argsBase().m_logFile == nullptr)) {
-    LOG(
-        (CLOG_WARN "log messages above %s are NOT sent to console (use file logging)",
-         CLOG->getFilterName(CLOG->getConsoleMaxLevel()))
+  if ((CLOG->getFilter() > CLOG->getConsoleMaxLevel()) && (Settings::value(Settings::Log::ToFile).toBool())) {
+    LOG_WARN(
+        "log messages above %s are NOT sent to console (use file logging)",
+        CLOG->getFilterName(CLOG->getConsoleMaxLevel())
     );
   }
 }
 
-void App::initApp(int argc, const char **argv)
+void App::initApp()
 {
-  std::string configFilename;
-  CLI::App cliApp{kAppDescription};
-  cliApp.add_option("--config-toml", configFilename, "Use TOML configuration file");
-
-  // Allow legacy args.
-  cliApp.allow_extras();
-
-  // Having the help argument crashes without try / catch around it
-  try {
-    cliApp.parse(argc, argv);
-  } catch (const CLI::Error &e) {
-    cliApp.exit(e);
-  }
-
-  if (!configFilename.empty()) {
-    Config config(configFilename, configSection());
-    if (config.load(argv[0])) {
-      parseArgs(config.argc(), config.argv());
-    }
-  } else {
-    parseArgs(argc, argv);
-  }
+  parseArgs();
 
   // set log filter
-  if (!CLOG->setFilter(argsBase().m_logFilter)) {
-    LOG((
-        CLOG_CRIT "%s: unrecognized log level `%s'" BYE, argsBase().m_pname, argsBase().m_logFilter, argsBase().m_pname
-    ));
+  if (const auto logLevel = Settings::logLevelText(); !CLOG->setFilter(logLevel)) {
+    LOG_CRIT(
+        "%s: unrecognized log level `%s'" BYE, qPrintable(processName()), qPrintable(logLevel),
+        qPrintable(processName())
+    );
     m_bye(s_exitArgs);
   }
   loggingFilterWarning();

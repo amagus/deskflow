@@ -16,8 +16,8 @@
 #include "base/TMethodJob.h"
 #include "client/Client.h"
 #include "common/Constants.h"
+#include "common/Settings.h"
 #include "deskflow/App.h"
-#include "deskflow/ArgsBase.h"
 #include "deskflow/ClientApp.h"
 #include "deskflow/Clipboard.h"
 #include "deskflow/KeyMap.h"
@@ -80,12 +80,11 @@ HINSTANCE MSWindowsScreen::s_windowInstance = nullptr;
 MSWindowsScreen *MSWindowsScreen::s_screen = nullptr;
 
 MSWindowsScreen::MSWindowsScreen(
-    bool isPrimary, bool noHooks, IEventQueue *events, bool enableLangSync,
-    deskflow::ClientScrollDirection scrollDirection
+    bool isPrimary, bool useHooks, IEventQueue *events, bool enableLangSync, bool invertScrolling
 )
-    : PlatformScreen(events, scrollDirection),
+    : PlatformScreen(events, invertScrolling),
       m_isPrimary(isPrimary),
-      m_noHooks(noHooks),
+      m_useHooks(useHooks),
       m_isOnScreen(m_isPrimary),
       m_hasMouse(GetSystemMetrics(SM_MOUSEPRESENT) != 0),
       m_events(events)
@@ -97,13 +96,13 @@ MSWindowsScreen::MSWindowsScreen(
 
   s_screen = this;
   try {
-    if (m_isPrimary && !m_noHooks) {
+    if (m_isPrimary && m_useHooks) {
       m_hook.loadLibrary();
     }
 
     m_screensaver = new MSWindowsScreenSaver();
     m_desks = new MSWindowsDesks(
-        m_isPrimary, m_noHooks, m_screensaver, m_events,
+        m_isPrimary, m_useHooks, m_screensaver, m_events,
         new TMethodJob<MSWindowsScreen>(this, &MSWindowsScreen::updateKeysCB)
     );
     m_keyState = new MSWindowsKeyState(
@@ -117,7 +116,7 @@ MSWindowsScreen::MSWindowsScreen(
     LOG_DEBUG("screen shape: %d,%d %dx%d %s", m_x, m_y, m_w, m_h, m_multimon ? "(multi-monitor)" : "");
     LOG_DEBUG("window is 0x%08x", m_window);
 
-    if (App::instance().argsBase().m_preventSleep) {
+    if (Settings::value(Settings::Core::PreventSleep).toBool()) {
       m_powerManager.disableSleep();
     }
 

@@ -18,7 +18,7 @@ void SettingsTests::initTestCase()
 
 void SettingsTests::setSettingsFile()
 {
-  Settings::setSettingFile(m_settingsFile);
+  Settings::setSettingsFile(m_settingsFile);
 }
 
 void SettingsTests::settingsFile()

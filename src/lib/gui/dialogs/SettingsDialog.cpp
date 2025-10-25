@@ -40,7 +40,6 @@ SettingsDialog::SettingsDialog(QWidget *parent, const IServerConfig &serverConfi
   ui->comboLogLevel->setItemData(5, tr("Debug entries"), Qt::ToolTipRole);
   ui->comboLogLevel->setItemData(6, tr("More debug output"), Qt::ToolTipRole);
   ui->comboLogLevel->setItemData(7, tr("Verbose debug output"), Qt::ToolTipRole);
-  ui->lblDebugWarning->setVisible(false);
 
   ui->comboTlsKeyLength->setItemIcon(0, QIcon::fromTheme(QStringLiteral("security-medium")));
   ui->comboTlsKeyLength->setItemIcon(1, QIcon::fromTheme(QIcon::ThemeIcon::SecurityHigh));
@@ -154,6 +153,7 @@ void SettingsDialog::accept()
   Settings::setValue(Settings::Gui::CloseToTray, ui->cbCloseToTray->isChecked());
   Settings::setValue(Settings::Gui::SymbolicTrayIcon, ui->rbIconMono->isChecked());
   Settings::setValue(Settings::Security::CheckPeers, ui->cbRequireClientCert->isChecked());
+  Settings::setValue(Settings::Client::ScrollSpeed, ui->sbScrollSpeed->value());
 
   Settings::ProcessMode mode;
   if (ui->groupService->isChecked())
@@ -179,14 +179,21 @@ void SettingsDialog::loadFromConfig()
   ui->cbCloseToTray->setChecked(Settings::value(Settings::Gui::CloseToTray).toBool());
   ui->cbElevateDaemon->setChecked(Settings::value(Settings::Daemon::Elevate).toBool());
   ui->cbAutoUpdate->setChecked(Settings::value(Settings::Gui::AutoUpdateCheck).toBool());
+  ui->sbScrollSpeed->setValue(Settings::value(Settings::Client::ScrollSpeed).toInt());
 
   const auto processMode = Settings::value(Settings::Core::ProcessMode).value<Settings::ProcessMode>();
   ui->groupService->setChecked(processMode == Settings::ProcessMode::Service);
+
+#ifndef Q_OS_WIN
+  ui->groupService->setVisible(false);
+#endif
 
   if (Settings::value(Settings::Gui::SymbolicTrayIcon).toBool())
     ui->rbIconMono->setChecked(true);
   else
     ui->rbIconColorful->setChecked(true);
+
+  ui->lblDebugWarning->setVisible(Settings::value(Settings::Log::Level).toInt() > 4);
 
   qDebug() << "load from config done";
   updateControls();
@@ -268,8 +275,9 @@ void SettingsDialog::updateControls()
   ui->comboTlsKeyLength->setEnabled(writable);
   ui->cbCloseToTray->setEnabled(writable);
 
-  // Handle enable and disable of service items
-  if (Settings::isNativeMode()) {
+  // Portable mode only ever applies to Windows.
+  // Daemon options should only be available on Windows when *not* in portable mode.
+  if (!Settings::isPortableMode()) {
     ui->groupService->setEnabled(writable);
     ui->cbElevateDaemon->setEnabled(writable && serviceChecked);
   } else if (ui->groupService->isVisibleTo(ui->tabAdvanced)) {

@@ -19,7 +19,7 @@ class Settings : public QObject
   Q_OBJECT
 public:
 #if defined(Q_OS_WIN)
-  inline const static auto UserDir = QStringLiteral("%1/AppData/Local/%2").arg(QDir::homePath(), kAppName);
+  inline const static auto UserDir = QStringLiteral("%1/AppData/Roaming/%2").arg(QDir::homePath(), kAppName);
   inline const static auto SystemDir = QStringLiteral("%1ProgramData/%2").arg(QDir::rootPath(), kAppName);
 #elif defined(Q_OS_MAC)
   inline const static auto UserDir = QStringLiteral("%1/Library/%2").arg(QDir::homePath(), kAppName);
@@ -28,13 +28,14 @@ public:
   inline const static auto UserDir = QStringLiteral("%1/.config/%2").arg(QDir::homePath(), kAppName);
   inline const static auto SystemDir = QStringLiteral("/etc/%1").arg(kAppName);
 #endif
+
   inline const static auto UserSettingFile = QStringLiteral("%1/%2.conf").arg(UserDir, kAppName);
   inline const static auto SystemSettingFile = QStringLiteral("%1/%2.conf").arg(SystemDir, kAppName);
 
   struct Client
   {
-    inline static const auto Binary = QStringLiteral("client/binary");
     inline static const auto InvertScrollDirection = QStringLiteral("client/invertScrollDirection");
+    inline static const auto ScrollSpeed = QStringLiteral("client/yscroll");
     inline static const auto LanguageSync = QStringLiteral("client/languageSync");
     inline static const auto RemoteHost = QStringLiteral("client/remoteHost");
     inline static const auto XdpRestoreToken = QStringLiteral("client/xdpRestoreToken");
@@ -50,6 +51,9 @@ public:
     inline static const auto ScreenName = QStringLiteral("core/screenName");
     inline static const auto StartedBefore = QStringLiteral("core/startedBefore");
     inline static const auto UpdateUrl = QStringLiteral("core/updateUrl");
+    inline static const auto Display = QStringLiteral("core/display");
+    inline static const auto RestartOnFailure = QStringLiteral("core/restartOnFailure");
+    inline static const auto UseHooks = QStringLiteral("core/useHooks");
   };
   struct Daemon
   {
@@ -84,8 +88,6 @@ public:
   };
   struct Server
   {
-    inline static const auto Binary = QStringLiteral("server/binary");
-    inline static const auto ConfigVisible = QStringLiteral("server/configVisible");
     inline static const auto ExternalConfig = QStringLiteral("server/externalConfig");
     inline static const auto ExternalConfigFile = QStringLiteral("server/externalConfigFile");
   };
@@ -113,13 +115,13 @@ public:
   Q_ENUM(CoreMode)
 
   static Settings *instance();
-  static void setSettingFile(const QString &settingsFile = QString());
+  static void setSettingsFile(const QString &settingsFile = QString());
   static void setValue(const QString &key = QString(), const QVariant &value = QVariant());
   static QVariant value(const QString &key = QString());
   static void restoreDefaultSettings();
   static QVariant defaultValue(const QString &key);
   static bool isWritable();
-  static bool isNativeMode();
+  static bool isPortableMode();
   static QString settingsFile();
   static QString settingsPath();
   static QString tlsDir();
@@ -130,6 +132,8 @@ public:
   static QSettingsProxy &proxy();
   static void save(bool emitSaving = true);
   static QStringList validKeys();
+  static int logLevelToInt(const QString &level = "INFO");
+  static QString portableSettingsFile();
 
 Q_SIGNALS:
   void settingsChanged(const QString key);
@@ -143,7 +147,6 @@ private:
   void cleanSettings();
 
   QSettings *m_settings = nullptr;
-  QString m_portableSettingsFile = QStringLiteral("%1/settings/%2.conf");
   std::shared_ptr<QSettingsProxy> m_settingsProxy;
 
   // clang-format off
@@ -159,10 +162,10 @@ private:
   };
 
   inline static const QStringList m_validKeys = {
-      Settings::Client::Binary
-    , Settings::Client::InvertScrollDirection
+      Settings::Client::InvertScrollDirection
     , Settings::Client::LanguageSync
     , Settings::Client::RemoteHost
+    , Settings::Client::ScrollSpeed
     , Settings::Client::XdpRestoreToken
     , Settings::Core::CoreMode
     , Settings::Core::Interface
@@ -173,6 +176,9 @@ private:
     , Settings::Core::ScreenName
     , Settings::Core::StartedBefore
     , Settings::Core::UpdateUrl
+    , Settings::Core::Display
+    , Settings::Core::RestartOnFailure
+    , Settings::Core::UseHooks
     , Settings::Daemon::Command
     , Settings::Daemon::Elevate
     , Settings::Daemon::LogFile
@@ -191,8 +197,6 @@ private:
     , Settings::Security::CheckPeers
     , Settings::Security::KeySize
     , Settings::Security::TlsEnabled
-    , Settings::Server::Binary
-    , Settings::Server::ConfigVisible
     , Settings::Server::ExternalConfig
     , Settings::Server::ExternalConfigFile
   };

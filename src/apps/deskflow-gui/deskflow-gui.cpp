@@ -32,6 +32,10 @@
 #include <QLoggingCategory>
 #endif
 
+#if defined(WINAPI_XWINDOWS) or defined(WINAPI_LIBEI)
+#include "platform/XDGPortalRegistry.h"
+#endif
+
 using namespace deskflow::gui;
 
 #if defined(Q_OS_MAC)
@@ -47,11 +51,15 @@ int main(int argc, char *argv[])
   QLoggingCategory::setFilterRules(QStringLiteral("*.debug=true\nqt.*=false"));
 #endif
 
+#if defined(WINAPI_XWINDOWS) or defined(WINAPI_LIBEI)
+  deskflow::platform::setAppId();
+#endif
+
   QCoreApplication::setApplicationName(kAppName);
   QCoreApplication::setOrganizationName(kAppName);
   QCoreApplication::setApplicationVersion(kVersion);
   QCoreApplication::setOrganizationDomain(kOrgDomain); // used in prefix, can't be a url
-  QGuiApplication::setDesktopFileName(QStringLiteral("org.deskflow.deskflow"));
+  QGuiApplication::setDesktopFileName(kRevFqdnName);
 
   QApplication app(argc, argv);
 
@@ -114,12 +122,7 @@ int main(int argc, char *argv[])
 #endif
 
   // Sets the fallback icon path and fallback theme
-  const auto themeName = QStringLiteral("deskflow-%1").arg(iconMode());
-  if (QIcon::themeName().isEmpty())
-    QIcon::setThemeName(themeName);
-  else
-    QIcon::setFallbackThemeName(themeName);
-  QIcon::setFallbackSearchPaths({QStringLiteral(":/icons/%1").arg(themeName)});
+  updateIconTheme();
 
   qInstallMessageHandler(deskflow::gui::messages::messageHandler);
   qInfo("%s v%s", kAppName, kDisplayVersion);

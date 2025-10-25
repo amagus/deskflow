@@ -20,7 +20,7 @@ implement this interface.
 class IArchDaemon
 {
 public:
-  using DaemonFunc = std::function<int(int, const char **)>;
+  using DaemonFunc = std::function<int()>;
 
   virtual ~IArchDaemon() = default;
   //! @name manipulators
@@ -53,7 +53,7 @@ public:
     \c ArchMiscWindows::daemonFailed() to indicate startup failure.
   </ul>
   */
-  virtual int daemonize(const QString &name, DaemonFunc const &func) = 0;
+  virtual int daemonize(DaemonFunc const &func) = 0;
 
   //@}
 

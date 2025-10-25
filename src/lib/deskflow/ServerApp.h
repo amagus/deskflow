@@ -48,33 +48,23 @@ class ServerApp : public App
   using ServerConfig = deskflow::server::Config;
 
 public:
-  explicit ServerApp(IEventQueue *events);
+  explicit ServerApp(IEventQueue *events, const QString &processName = QString());
   ~ServerApp() override = default;
 
   //
   // IApp overrides
   //
 
-  void parseArgs(int argc, const char *const *argv) override;
-  void help() override;
+  void parseArgs() override;
   const char *daemonName() const override;
   const char *daemonInfo() const override;
   void loadConfig() override;
   bool loadConfig(const std::string &pathname) override;
   deskflow::Screen *createScreen() override;
   int mainLoop() override;
-  int runInner(int argc, char **argv, StartupFunc startup) override;
-  int start(int argc, char **argv) override;
+  int runInner(StartupFunc startup) override;
+  int start() override;
   void startNode() override;
-
-  //
-  // App overrides
-  //
-
-  std::string configSection() const override
-  {
-    return "server";
-  }
 
   //
   // Regular functions
@@ -105,11 +95,6 @@ public:
     return m_server;
   }
 
-  deskflow::ServerArgs &args() const
-  {
-    return (deskflow::ServerArgs &)argsBase();
-  }
-
   //
   // Static functions
   //
@@ -133,4 +118,6 @@ private:
   ClientListener *m_listener = nullptr;
   EventQueueTimer *m_timer = nullptr;
   NetworkAddress *m_deskflowAddress = nullptr;
+  std::string m_name;
+  std::shared_ptr<deskflow::server::Config> m_config;
 };

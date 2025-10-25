@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "deskflow/ClientArgs.h"
+#include "common/Settings.h"
 #include "deskflow/IPlatformScreen.h"
 
 #include <stdexcept>
@@ -21,9 +21,7 @@ subclasses to implement the rest.
 class PlatformScreen : public IPlatformScreen
 {
 public:
-  explicit PlatformScreen(
-      IEventQueue *events, deskflow::ClientScrollDirection scrollDirection = deskflow::ClientScrollDirection::Normal
-  );
+  explicit PlatformScreen(IEventQueue *events, bool invertScrollDirection);
   ~PlatformScreen() override = default;
 
   // IScreen overrides
@@ -64,6 +62,7 @@ public:
   KeyModifierMask pollActiveModifiers() const override;
   int32_t pollActiveGroup() const override;
   void pollPressedKeys(KeyButtonSet &pressedKeys) const override;
+  void clearStaleModifiers() override;
 
   // IPlatformScreen overrides
   void enable() override = 0;
@@ -117,5 +116,5 @@ private:
    * This member contains client scroll direction.
    * This member is used only on client side.
    */
-  deskflow::ClientScrollDirection m_clientScrollDirection = deskflow::ClientScrollDirection::Normal;
+  bool m_invertScrollDirection = false;
 };

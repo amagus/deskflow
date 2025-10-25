@@ -1,5 +1,6 @@
 /*
  * Deskflow -- mouse and keyboard sharing utility
+ * SPDX-FileCopyrightText: (C) 2025 Chris Rizzitello <sithlord48@gmail.com>
  * SPDX-FileCopyrightText: (C) 2024 - 2025 Symless Ltd.
  * SPDX-License-Identifier: GPL-2.0-only WITH LicenseRef-OpenSSL-Exception
  */
@@ -10,12 +11,9 @@
 #include "gui/FileTail.h"
 #include "gui/config/IServerConfig.h"
 
-#include <QFileSystemWatcher>
 #include <QMutex>
 #include <QObject>
 #include <QProcess>
-#include <QString>
-#include <QStringList>
 #include <QTimer>
 
 namespace deskflow::gui {
@@ -45,6 +43,8 @@ public:
     Stopped,
     RetryPending
   };
+  Q_ENUM(ProcessState)
+
   enum class ConnectionState
   {
     Disconnected,
@@ -55,7 +55,6 @@ public:
 
   explicit CoreProcess(const IServerConfig &serverConfig);
 
-  void extracted(QString &app, QStringList &args);
   void start(std::optional<ProcessMode> processMode = std::nullopt);
   void stop(std::optional<ProcessMode> processMode = std::nullopt);
   void restart();
@@ -89,7 +88,7 @@ public:
   // setters
   void setAddress(const QString &address)
   {
-    m_address = address.trimmed();
+    m_address = correctedAddress(address);
   }
   void setMode(Settings::CoreMode mode)
   {
@@ -97,7 +96,6 @@ public:
   }
 
 Q_SIGNALS:
-  void starting();
   void error(deskflow::gui::CoreProcess::Error error);
   void logLine(const QString &line);
   void connectionStateChanged(deskflow::gui::CoreProcess::ConnectionState state);
@@ -112,25 +110,22 @@ private Q_SLOTS:
   void daemonIpcClientConnected();
 
 private:
-  void startForegroundProcess(const QString &app, const QStringList &args);
-  void startProcessFromDaemon(const QString &app, const QStringList &args);
+  void startForegroundProcess(const QStringList &args);
+  void startProcessFromDaemon(const QStringList &args);
   void stopForegroundProcess() const;
   void stopProcessFromDaemon();
-  bool addGenericArgs(QStringList &args) const;
-  bool addServerArgs(QStringList &args, QString &app);
-  bool addClientArgs(QStringList &args, QString &app);
   QString persistServerConfig() const;
-  QString modeString() const;
-  QString processModeString() const;
   void setConnectionState(ConnectionState state);
   void setProcessState(ProcessState state);
   void checkLogLine(const QString &line);
   bool checkSecureSocket(const QString &line);
   void handleLogLines(const QString &text);
-  QString correctedInterface() const;
-  QString correctedAddress() const;
+  QString correctedAddress(const QString &address) const;
   QString requestDaemonLogPath();
-  void persistLogDir() const;
+  static QString makeQuotedArgs(const QString &app, const QStringList &args);
+  static QString processModeToString(const Settings::ProcessMode mode);
+  static QString processStateToString(const CoreProcess::ProcessState state);
+  static QString wrapIpv6(const QString &address);
 
 #ifdef Q_OS_MAC
   void checkOSXNotification(const QString &line);
