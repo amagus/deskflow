@@ -85,7 +85,6 @@ public:
   {
     return m_serverConfig;
   }
-  void autoAddScreen(const QString &name);
 
   void hide();
 
@@ -93,6 +92,10 @@ protected:
   void changeEvent(QEvent *e) override;
 
 private:
+  /**
+   * @brief updateText Update all text not in the UI
+   */
+  void updateText();
   void toggleLogVisible(bool visible);
 
   void settingsChanged(const QString &key = QString());
@@ -191,6 +194,12 @@ private:
   QLabel *m_lblStatus = nullptr;
   QPushButton *m_btnFingerprint = nullptr;
   QPushButton *m_btnUpdate = nullptr;
+
+  // Window Menu
+  QMenu *m_menuFile = nullptr;
+  QMenu *m_menuEdit = nullptr;
+  QMenu *m_menuView = nullptr;
+  QMenu *m_menuHelp = nullptr;
 
   // Window Actions
   QAction *m_actionAbout = nullptr;

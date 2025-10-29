@@ -63,7 +63,6 @@ class Arch : public ARCH_DAEMON, public ARCH_LOG, public ARCH_MULTITHREAD, publi
 {
 public:
   Arch();
-  explicit Arch(Arch *arch);
   ~Arch() override = default;
 
 #if SYSAPI_WIN32
@@ -85,11 +84,6 @@ public:
   calling this function.
   */
   static Arch *getInstance();
-
-  static void setInstance(Arch *s)
-  {
-    s_instance = s;
-  }
 
   /**
    * @brief blocks calling thread for timout seconds

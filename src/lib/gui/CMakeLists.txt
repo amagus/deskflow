@@ -17,8 +17,6 @@ add_library(${target} STATIC
   ${platform_sources}
   Action.cpp
   Action.h
-  DataDownloader.cpp
-  DataDownloader.h
   Diagnostic.cpp
   Diagnostic.h
   DotEnv.cpp
@@ -69,9 +67,6 @@ add_library(${target} STATIC
   dialogs/ActionDialog.cpp
   dialogs/ActionDialog.h
   dialogs/ActionDialog.ui
-  dialogs/AddClientDialog.cpp
-  dialogs/AddClientDialog.h
-  dialogs/AddClientDialog.ui
   dialogs/FingerprintDialog.cpp
   dialogs/FingerprintDialog.h
   dialogs/HotkeyDialog.cpp

@@ -9,12 +9,14 @@
 #include "SettingsDialog.h"
 #include "ui_SettingsDialog.h"
 
+#include "common/I18N.h"
 #include "common/Settings.h"
 #include "gui/Messages.h"
 #include "gui/core/CoreProcess.h"
 #include "gui/tls/TlsCertificate.h"
 #include "gui/tls/TlsUtility.h"
 
+#include <QComboBox>
 #include <QDir>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -31,22 +33,19 @@ SettingsDialog::SettingsDialog(QWidget *parent, const IServerConfig &serverConfi
 
   ui->setupUi(this);
 
-  // Set Tooltip for the logLevel Items
-  ui->comboLogLevel->setItemData(0, tr("Required messages"), Qt::ToolTipRole);
-  ui->comboLogLevel->setItemData(1, tr("Non-fatal errors"), Qt::ToolTipRole);
-  ui->comboLogLevel->setItemData(2, tr("General warnings"), Qt::ToolTipRole);
-  ui->comboLogLevel->setItemData(3, tr("Notable events"), Qt::ToolTipRole);
-  ui->comboLogLevel->setItemData(4, tr("General events [Default]"), Qt::ToolTipRole);
-  ui->comboLogLevel->setItemData(5, tr("Debug entries"), Qt::ToolTipRole);
-  ui->comboLogLevel->setItemData(6, tr("More debug output"), Qt::ToolTipRole);
-  ui->comboLogLevel->setItemData(7, tr("Verbose debug output"), Qt::ToolTipRole);
+  // set up the language combo
+  I18N::reDetectLanguages();
+  ui->comboLanguage->addItems(I18N::detectedLanguages());
+  ui->comboLanguage->setCurrentText(I18N::currentLanguage());
+
+  updateText();
 
   ui->comboTlsKeyLength->setItemIcon(0, QIcon::fromTheme(QStringLiteral("security-medium")));
   ui->comboTlsKeyLength->setItemIcon(1, QIcon::fromTheme(QIcon::ThemeIcon::SecurityHigh));
   ui->lblTlsCertInfo->setFixedSize(28, 28);
 
-  ui->rbIconMono->setIcon(QIcon::fromTheme(QStringLiteral("deskflow-symbolic")));
-  ui->rbIconColorful->setIcon(QIcon::fromTheme(QStringLiteral("deskflow")));
+  ui->rbIconMono->setIcon(QIcon::fromTheme(QStringLiteral("%1-symbolic").arg(kRevFqdnName)));
+  ui->rbIconColorful->setIcon(QIcon::fromTheme(kRevFqdnName));
 
   // force the first tab, since qt creator sets the active tab as the last one
   // the developer was looking at, and it's easy to accidentally save that.
@@ -60,6 +59,15 @@ SettingsDialog::SettingsDialog(QWidget *parent, const IServerConfig &serverConfi
   setWindowFlags((windowFlags() | Qt::CustomizeWindowHint) & ~Qt::WindowMinMaxButtonsHint);
 
   initConnections();
+}
+
+void SettingsDialog::changeEvent(QEvent *e)
+{
+  QDialog::changeEvent(e);
+  if (e->type() == QEvent::LanguageChange) {
+    ui->retranslateUi(this);
+    updateText();
+  }
 }
 
 void SettingsDialog::initConnections() const
@@ -77,6 +85,7 @@ void SettingsDialog::initConnections() const
   connect(ui->btnBrowseLog, &QPushButton::clicked, this, &SettingsDialog::browseLogPath);
   connect(ui->cbLogToFile, &QCheckBox::toggled, this, &SettingsDialog::setLogToFile);
   connect(ui->comboLogLevel, &QComboBox::currentIndexChanged, this, &SettingsDialog::logLevelChanged);
+  connect(ui->comboLanguage, &QComboBox::currentTextChanged, I18N::instance(), &I18N::setLanguage);
 }
 
 void SettingsDialog::regenCertificates()
@@ -134,6 +143,19 @@ void SettingsDialog::showReadOnlyMessage()
   messages::showReadOnlySettings(this, Settings::settingsFile());
 }
 
+void SettingsDialog::updateText()
+{
+  // Set Tooltip for the logLevel Items
+  ui->comboLogLevel->setItemData(0, tr("Required messages"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(1, tr("Non-fatal errors"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(2, tr("General warnings"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(3, tr("Notable events"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(4, tr("General events [Default]"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(5, tr("Debug entries"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(6, tr("More debug output"), Qt::ToolTipRole);
+  ui->comboLogLevel->setItemData(7, tr("Verbose debug output"), Qt::ToolTipRole);
+}
+
 void SettingsDialog::accept()
 {
   Settings::setValue(Settings::Core::Port, ui->sbPort->value());
@@ -154,6 +176,7 @@ void SettingsDialog::accept()
   Settings::setValue(Settings::Gui::SymbolicTrayIcon, ui->rbIconMono->isChecked());
   Settings::setValue(Settings::Security::CheckPeers, ui->cbRequireClientCert->isChecked());
   Settings::setValue(Settings::Client::ScrollSpeed, ui->sbScrollSpeed->value());
+  Settings::setValue(Settings::Core::Language, ui->comboLanguage->currentText());
 
   Settings::ProcessMode mode;
   if (ui->groupService->isChecked())
