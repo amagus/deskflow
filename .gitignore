@@ -5,6 +5,7 @@
 
 # temp dirs created during build
 /build
+/build-vscode
 /dist
 /deps
 /tmp
