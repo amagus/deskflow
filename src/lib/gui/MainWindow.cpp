@@ -62,7 +62,6 @@ using CoreProcessState = CoreProcess::ProcessState;
 
 MainWindow::MainWindow()
     : ui{std::make_unique<Ui::MainWindow>()},
-      m_serverConfig(),
       m_coreProcess(m_serverConfig),
       m_serverConnection(this, m_serverConfig),
       m_clientConnection(this),
@@ -754,12 +753,15 @@ void MainWindow::saveSettings() const
 
 void MainWindow::setTrayIcon()
 {
-  QString iconString = kRevFqdnName;
+  static const auto fallbackPath = QStringLiteral(":/icons/%1-%2/apps/64/%3");
 
+  QString themeIcon = kRevFqdnName;
   if (!Settings::value(Settings::Gui::SymbolicTrayIcon).toBool()) {
-    m_trayIcon->setIcon(QIcon::fromTheme(iconString));
+    m_trayIcon->setIcon(QIcon(fallbackPath.arg(kAppId, QStringLiteral("dark"), themeIcon)));
     return;
   }
+
+  themeIcon.append(QStringLiteral("-symbolic"));
 
 #ifdef Q_OS_WIN
   QSettings settings(
@@ -768,13 +770,12 @@ void MainWindow::setTrayIcon()
   );
   const QString theme = settings.value(QStringLiteral("SystemUsesLightTheme"), 1).toBool() ? QStringLiteral("light")
                                                                                            : QStringLiteral("dark");
-  iconString = QStringLiteral(":/icons/deskflow-%1/apps/64/%2").arg(theme, kRevFqdnName);
-#endif
-
-  iconString.append(QStringLiteral("-symbolic"));
-  auto icon = QIcon::fromTheme(iconString);
+  m_trayIcon->setIcon(QIcon(fallbackPath.arg(kAppId, theme, themeIcon)));
+#else
+  auto icon = QIcon::fromTheme(themeIcon, QIcon(fallbackPath.arg(kAppId, iconMode(), themeIcon)));
   icon.setIsMask(true);
   m_trayIcon->setIcon(icon);
+#endif
 }
 
 void MainWindow::handleLogLine(const QString &line)
