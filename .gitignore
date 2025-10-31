@@ -46,3 +46,7 @@ CMakeFiles/*
 
 # scripts folder
 /scripts
+
+# other generated files
+compile_commands.json
+src/lib/Config.h
