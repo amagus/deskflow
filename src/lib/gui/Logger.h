@@ -8,12 +8,6 @@
 
 #include <QObject>
 
-#ifdef NDEBUG
-const bool kDebug = false;
-#else
-const bool kDebug = true;
-#endif
-
 namespace deskflow::gui {
 
 class Logger : public QObject
@@ -21,27 +15,24 @@ class Logger : public QObject
   Q_OBJECT
 
 public:
-  static Logger &instance()
+  static Logger *instance()
   {
-    return s_instance;
+    static Logger m;
+    return &m;
   }
 
   void loadEnvVars();
   void handleMessage(const QtMsgType type, const QString &fileLine, const QString &message);
-  void logVerbose(const QString &message) const;
 
 Q_SIGNALS:
   void newLine(const QString &line);
 
 private:
-  static Logger s_instance;
-  bool m_debug = kDebug;
-  bool m_verbose = false;
+#ifdef NDEBUG
+  bool m_debug = false;
+#else
+  bool m_debug = true;
+#endif
 };
-
-inline void logVerbose(const QString &message)
-{
-  Logger::instance().logVerbose(message);
-}
 
 } // namespace deskflow::gui
