@@ -1354,7 +1354,7 @@ pascal OSStatus OSXScreen::userSwitchCallback(EventHandlerCallRef nextHandler, E
 // main of thread monitoring system power (sleep/wakup) using a CFRunLoop
 //
 
-void OSXScreen::watchSystemPowerThread(void *)
+void OSXScreen::watchSystemPowerThread(const void *)
 {
   io_object_t notifier;
   IONotificationPortRef notificationPortRef;

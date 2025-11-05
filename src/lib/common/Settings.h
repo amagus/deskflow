@@ -78,6 +78,7 @@ public:
     inline static const auto File = QStringLiteral("log/file");
     inline static const auto Level = QStringLiteral("log/level");
     inline static const auto ToFile = QStringLiteral("log/toFile");
+    inline static const auto GuiDebug = QStringLiteral("log/guiDebug");
   };
   struct Security
   {
@@ -185,6 +186,7 @@ private:
     , Settings::Log::File
     , Settings::Log::Level
     , Settings::Log::ToFile
+    , Settings::Log::GuiDebug
     , Settings::Gui::Autohide
     , Settings::Gui::AutoUpdateCheck
     , Settings::Gui::CloseReminder
@@ -199,6 +201,30 @@ private:
     , Settings::Security::TlsEnabled
     , Settings::Server::ExternalConfig
     , Settings::Server::ExternalConfigFile
+  };
+
+  // When checking the default values this list contains the ones that default to false.
+  inline static const QStringList m_defaultFalseValues = {
+      Settings::Gui::Autohide
+    , Settings::Core::StartedBefore
+    , Settings::Core::PreventSleep
+    , Settings::Server::ExternalConfig
+    , Settings::Client::InvertScrollDirection
+    , Settings::Log::ToFile
+    , Settings::Log::GuiDebug
+  };
+
+  // When checking the default values this list contains the ones that default to true.
+  inline static const QStringList m_defaultTrueValues = {
+      Settings::Core::UseHooks
+    , Settings::Client::LanguageSync
+    , Settings::Gui::CloseToTray
+    , Settings::Gui::CloseReminder
+    , Settings::Gui::LogExpanded
+    , Settings::Gui::SymbolicTrayIcon
+    , Settings::Gui::ShowGenericClientFailureDialog
+    , Settings::Security::TlsEnabled
+    , Settings::Security::CheckPeers
   };
   // clang-format on
 };
