@@ -7,9 +7,10 @@
 
 #pragma once
 
-#include "base/EventTypes.h"
 #include "io/IStream.h"
 #include "net/ISocket.h"
+
+#include <string>
 
 //! Data stream socket interface
 /*!

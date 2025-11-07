@@ -7,7 +7,6 @@
 
 #include "platform/MSWindowsClipboard.h"
 
-#include "arch/win32/ArchMiscWindows.h"
 #include "base/Log.h"
 #include "platform/MSWindowsClipboardBitmapConverter.h"
 #include "platform/MSWindowsClipboardFacade.h"
@@ -31,6 +30,7 @@ MSWindowsClipboard::MSWindowsClipboard(HWND window)
   m_converters.push_back(new MSWindowsClipboardUTF16Converter);
   m_converters.push_back(new MSWindowsClipboardBitmapConverter);
   m_converters.push_back(new MSWindowsClipboardHTMLConverter);
+  m_converters.push_back(new MSWindowsClipboardTextConverter);
 }
 
 MSWindowsClipboard::~MSWindowsClipboard()

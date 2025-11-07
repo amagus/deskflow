@@ -8,30 +8,31 @@
 #pragma once
 
 #include <QFileInfo>
+#include <QSysInfo>
 
 namespace deskflow::platform {
-
-#if WINAPI_LIBEI
-const auto kHasEi = true;
-#else
-const auto kHasEi = false;
-#endif
-
-#if WINAPI_LIBPORTAL
-const auto kHasPortal = true;
-#else
-const auto kHasPortal = false;
-#endif
-
-#if HAVE_LIBPORTAL_INPUTCAPTURE
-const auto kHasPortalInputCapture = true;
-#else
-const auto kHasPortalInputCapture = false;
-#endif
 
 inline bool isWayland()
 {
   return qEnvironmentVariable("XDG_SESSION_TYPE") == QStringLiteral("wayland");
+}
+
+/**
+ * @brief isWindows
+ * @return Returns true if we are running on windows
+ */
+inline bool isWindows()
+{
+  return QSysInfo::productType() == QStringLiteral("windows");
+}
+
+/**
+ * @brief isMac
+ * @return Returns true if we are running on mac os
+ */
+inline bool isMac()
+{
+  return QSysInfo::productType() == QStringLiteral("macos");
 }
 
 /**

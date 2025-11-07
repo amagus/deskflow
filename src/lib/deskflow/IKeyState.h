@@ -8,12 +8,11 @@
 
 #pragma once
 
-#include "base/Event.h"
-#include "base/EventTypes.h"
 #include "base/IEventQueue.h"
 #include "deskflow/KeyTypes.h"
 
 #include <set>
+#include <string>
 
 //! Key state interface
 /*!

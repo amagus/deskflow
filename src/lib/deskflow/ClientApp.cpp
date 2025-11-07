@@ -8,22 +8,19 @@
 
 #include "deskflow/ClientApp.h"
 
-#include "arch/Arch.h"
 #include "base/Event.h"
 #include "base/IEventQueue.h"
 #include "base/Log.h"
 #include "client/Client.h"
-#include "common/Constants.h"
 #include "common/ExitCodes.h"
+#include "common/PlatformInfo.h"
 #include "common/Settings.h"
-#include "deskflow/ProtocolTypes.h"
 #include "deskflow/Screen.h"
 #include "deskflow/ScreenException.h"
 #include "net/NetworkAddress.h"
 #include "net/SocketException.h"
 #include "net/SocketMultiplexer.h"
 #include "net/TCPSocketFactory.h"
-#include "platform/Wayland.h"
 
 #if SYSAPI_WIN32
 #include "arch/win32/ArchMiscWindows.h"
@@ -50,13 +47,7 @@
 #include "platform/OSXScreen.h"
 #endif
 
-#if defined(WINAPI_XWINDOWS) or defined(WINAPI_LIBEI)
-#include "platform/Wayland.h"
-#endif
-
 #include <memory>
-#include <sstream>
-#include <stdio.h>
 
 constexpr static auto s_retryTime = 1.0;
 
@@ -68,10 +59,9 @@ ClientApp::ClientApp(IEventQueue *events, const QString &processName) : App(even
 void ClientApp::parseArgs()
 {
   // save server address
-  if (!Settings::value(Settings::Client::RemoteHost).isNull()) {
+  if (const auto address = Settings::value(Settings::Client::RemoteHost).toString(); !address.isEmpty()) {
     try {
-      *m_serverAddress =
-          NetworkAddress(Settings::value(Settings::Client::RemoteHost).toString().toStdString(), kDefaultPort);
+      *m_serverAddress = NetworkAddress(address.toStdString(), Settings::value(Settings::Core::Port).toInt());
       m_serverAddress->resolve();
     } catch (SocketAddressException &e) {
       // allow an address that we can't look up if we're restartable.
@@ -88,21 +78,16 @@ void ClientApp::parseArgs()
 
 const char *ClientApp::daemonName() const
 {
-#if SYSAPI_WIN32
-  return "Deskflow Client";
-#elif SYSAPI_UNIX
+  if (deskflow::platform::isWindows())
+    return "Deskflow Client";
   return "deskflow-client";
-#endif
 }
 
 const char *ClientApp::daemonInfo() const
 {
-#if SYSAPI_WIN32
-  return "Allows another computer to share it's keyboard and mouse with this "
-         "computer.";
-#elif SYSAPI_UNIX
+  if (deskflow::platform::isWindows())
+    return "Allows another computer to share it's keyboard and mouse with this computer.";
   return "";
-#endif
 }
 
 deskflow::Screen *ClientApp::createScreen()

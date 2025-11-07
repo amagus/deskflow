@@ -13,8 +13,10 @@
 #include "base/Log.h"
 #include "base/Path.h"
 #include "common/ExitCodes.h"
+#include "common/PlatformInfo.h"
 #include "common/Settings.h"
 #include "deskflow/App.h"
+#include "deskflow/ProtocolTypes.h"
 #include "deskflow/Screen.h"
 #include "deskflow/ScreenException.h"
 #include "net/SocketException.h"
@@ -52,14 +54,7 @@
 #include "platform/OSXScreen.h"
 #endif
 
-#if defined(WINAPI_XWINDOWS) or defined(WINAPI_LIBEI)
-#include "platform/Wayland.h"
-#endif
-
 #include <fstream>
-#include <iostream>
-#include <sstream>
-#include <stdio.h>
 
 using namespace deskflow::server;
 
@@ -76,13 +71,16 @@ ServerApp::ServerApp(IEventQueue *events, const QString &processName) : App(even
 void ServerApp::parseArgs()
 {
   if (const auto address = Settings::value(Settings::Core::Interface).toString(); !address.isEmpty()) {
-    try {
-      *m_deskflowAddress = NetworkAddress(address.toStdString(), kDefaultPort);
-      m_deskflowAddress->resolve();
-    } catch (SocketAddressException &e) {
-      LOG_CRIT("%s: %s" BYE, qPrintable(processName()), e.what(), qPrintable(processName()));
-      bye(s_exitArgs);
-    }
+    *m_deskflowAddress = NetworkAddress(address.toStdString(), Settings::value(Settings::Core::Port).toInt());
+  } else {
+    *m_deskflowAddress = NetworkAddress(Settings::value(Settings::Core::Port).toInt());
+  }
+
+  try {
+    m_deskflowAddress->resolve();
+  } catch (SocketAddressException &e) {
+    LOG_CRIT("%s: %s" BYE, qPrintable(processName()), e.what(), qPrintable(processName()));
+    bye(s_exitArgs);
   }
 }
 
@@ -608,20 +606,16 @@ int ServerApp::start()
 
 const char *ServerApp::daemonName() const
 {
-#if SYSAPI_WIN32
-  return "Deskflow Server";
-#elif SYSAPI_UNIX
+  if (deskflow::platform::isWindows())
+    return "Deskflow Server";
   return "deskflow-server";
-#endif
 }
 
 const char *ServerApp::daemonInfo() const
 {
-#if SYSAPI_WIN32
-  return "Shares this computers mouse and keyboard with other computers.";
-#elif SYSAPI_UNIX
+  if (deskflow::platform::isWindows())
+    return "Shares this computers mouse and keyboard with other computers.";
   return "";
-#endif
 }
 
 void ServerApp::startNode()

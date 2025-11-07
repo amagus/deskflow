@@ -13,7 +13,6 @@
 #include <Carbon/Carbon.h>
 
 #include <map>
-#include <set>
 #include <vector>
 
 // private api accessors to check if left or right keys are pressed

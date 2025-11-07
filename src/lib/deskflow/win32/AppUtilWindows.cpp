@@ -8,7 +8,6 @@
 #include "deskflow/win32/AppUtilWindows.h"
 
 #include "arch/Arch.h"
-#include "arch/ArchException.h"
 #include "arch/win32/ArchMiscWindows.h"
 #include "arch/win32/XArchWindows.h"
 #include "base/Event.h"
@@ -19,12 +18,11 @@
 #include "deskflow/App.h"
 #include "deskflow/DeskflowException.h"
 #include "deskflow/Screen.h"
+#include "mt/Thread.h"
 #include "platform/MSWindowsScreen.h"
 
-#include <VersionHelpers.h>
 #include <Windows.h>
 #include <conio.h>
-#include <memory>
 
 AppUtilWindows::AppUtilWindows(IEventQueue *events) : m_events(events), m_exitMode(kExitModeNormal)
 {
@@ -105,10 +103,6 @@ static int foregroundStartupStatic()
 
 int AppUtilWindows::run()
 {
-  if (!IsWindowsXPSP3OrGreater()) {
-    throw std::runtime_error("unsupported os version, xp sp3 or greater required");
-  }
-
   // record window instance for tray icon, etc
   ArchMiscWindows::setInstanceWin32(GetModuleHandle(nullptr));
 

@@ -10,9 +10,9 @@
 #include "common/Constants.h"
 #include "common/ExitCodes.h"
 #include "common/I18N.h"
+#include "common/PlatformInfo.h"
 #include "common/UrlConstants.h"
 #include "gui/Diagnostic.h"
-#include "gui/Logger.h"
 #include "gui/MainWindow.h"
 #include "gui/Messages.h"
 #include "gui/StyleUtils.h"
@@ -118,12 +118,9 @@ int main(int argc, char *argv[])
     return s_exitDuplicate;
   }
 
-#if !defined(Q_OS_MAC)
-  // causes dark mode to be used on some DE's
-  if (qEnvironmentVariable("XDG_CURRENT_DESKTOP") != QLatin1String("KDE")) {
+  if (!deskflow::platform::isMac() && qEnvironmentVariable("XDG_CURRENT_DESKTOP") != QLatin1String("KDE")) {
     QApplication::setStyle("fusion");
   }
-#endif
 
   // Sets the fallback icon path and fallback theme
   updateIconTheme();

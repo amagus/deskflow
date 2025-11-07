@@ -18,16 +18,14 @@
 #include "dialogs/ServerConfigDialog.h"
 #include "dialogs/SettingsDialog.h"
 
-#include "base/String.h"
+#include "common/PlatformInfo.h"
 #include "common/Settings.h"
 #include "common/UrlConstants.h"
 #include "gui/Messages.h"
-#include "gui/Styles.h"
 #include "gui/core/CoreProcess.h"
 #include "gui/ipc/DaemonIpcClient.h"
 #include "gui/widgets/LogDock.h"
 #include "net/FingerprintDatabase.h"
-#include "platform/Wayland.h"
 
 #if defined(Q_OS_LINUX)
 #include "Config.h"
@@ -103,10 +101,10 @@ MainWindow::MainWindow()
   m_actionMinimize->setIcon(QIcon::fromTheme(QStringLiteral("window-minimize-pip")));
   m_actionRestore->setIcon(QIcon::fromTheme(QStringLiteral("window-restore-pip")));
 
-#ifndef Q_OS_WIN
-  m_actionQuit->setShortcut(QKeySequence::Quit);
-  m_actionTrayQuit->setShortcut(QKeySequence::Quit);
-#endif
+  if (!deskflow::platform::isWindows()) {
+    m_actionQuit->setShortcut(QKeySequence::Quit);
+    m_actionTrayQuit->setShortcut(QKeySequence::Quit);
+  }
 
   m_actionQuit->setMenuRole(QAction::QuitRole);
   m_actionQuit->setIcon(QIcon(QIcon::fromTheme("application-exit")));
@@ -222,13 +220,13 @@ void MainWindow::setupControls()
   ui->lineEditName->setValidator(new QRegularExpressionValidator(m_nameRegEx, this));
   ui->lineEditName->setVisible(false);
 
-#if defined(Q_OS_MAC)
-  ui->rbModeServer->setAttribute(Qt::WA_MacShowFocusRect, 0);
-  ui->rbModeClient->setAttribute(Qt::WA_MacShowFocusRect, 0);
-  ui->btnSaveServerConfig->setFixedWidth(ui->btnSaveServerConfig->height());
-#else
-  ui->btnSaveServerConfig->setIconSize(QSize(22, 22));
-#endif
+  if (deskflow::platform::isMac()) {
+    ui->rbModeServer->setAttribute(Qt::WA_MacShowFocusRect, false);
+    ui->rbModeClient->setAttribute(Qt::WA_MacShowFocusRect, false);
+    ui->btnSaveServerConfig->setFixedWidth(ui->btnSaveServerConfig->height());
+  } else {
+    ui->btnSaveServerConfig->setIconSize(QSize(22, 22));
+  }
 
   static const auto btnHeight = ui->statusBar->height() - 2;
   static const auto btnSize = QSize(btnHeight, btnHeight);
@@ -295,10 +293,9 @@ void MainWindow::connectSlots()
 
   connect(&m_versionChecker, &VersionChecker::updateFound, this, &MainWindow::versionCheckerUpdateFound);
 
-// Mac os tray will only show a menu
-#ifndef Q_OS_MAC
-  connect(m_trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::trayIconActivated);
-#endif
+  // Mac os tray will only show a menu
+  if (!deskflow::platform::isMac())
+    connect(m_trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::trayIconActivated);
 
   connect(&m_serverConnection, &ServerConnection::configureClient, this, &MainWindow::serverConnectionConfigureClient);
   connect(&m_serverConnection, &ServerConnection::clientsChanged, this, &MainWindow::serverClientsChanged);
@@ -763,19 +760,20 @@ void MainWindow::setTrayIcon()
 
   themeIcon.append(QStringLiteral("-symbolic"));
 
-#ifdef Q_OS_WIN
-  QSettings settings(
-      QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
-      QSettings::NativeFormat
-  );
-  const QString theme = settings.value(QStringLiteral("SystemUsesLightTheme"), 1).toBool() ? QStringLiteral("light")
-                                                                                           : QStringLiteral("dark");
-  m_trayIcon->setIcon(QIcon(fallbackPath.arg(kAppId, theme, themeIcon)));
-#else
+  if (deskflow::platform::isWindows()) {
+    QSettings settings(
+        QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+        QSettings::NativeFormat
+    );
+    const QString theme = settings.value(QStringLiteral("SystemUsesLightTheme"), 1).toBool() ? QStringLiteral("light")
+                                                                                             : QStringLiteral("dark");
+    m_trayIcon->setIcon(QIcon(fallbackPath.arg(kAppId, theme, themeIcon)));
+    return;
+  }
+
   auto icon = QIcon::fromTheme(themeIcon, QIcon(fallbackPath.arg(kAppId, iconMode(), themeIcon)));
   icon.setIsMask(true);
   m_trayIcon->setIcon(icon);
-#endif
 }
 
 void MainWindow::handleLogLine(const QString &line)
@@ -1071,11 +1069,11 @@ void MainWindow::updateText()
   //: stop core shortcut
   m_actionStopCore->setShortcut(QKeySequence(tr("Ctrl+T")));
 
-#ifdef Q_OS_WIN
-  //: Quit shortcut
-  m_actionQuit->setShortcut(QKeySequence(tr("Ctrl+Q")));
-  m_actionTrayQuit->setShortcut(QKeySequence(tr("Ctrl+Q")));
-#endif
+  if (deskflow::platform::isWindows()) {
+    //: Quit shortcut
+    m_actionQuit->setShortcut(QKeySequence(tr("Ctrl+Q")));
+    m_actionTrayQuit->setShortcut(QKeySequence(tr("Ctrl+Q")));
+  }
 
   // General controls
   m_btnFingerprint->setToolTip(tr("View local fingerprint"));
