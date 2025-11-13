@@ -31,13 +31,7 @@ elseif(APPLE)
     @ONLY
   )
 
-  file(COPY_FILE
-    ${PROJECT_SOURCE_DIR}/LICENSES/LicenseRef-OpenSSL-Exception.txt
-    ${CMAKE_CURRENT_BINARY_DIR}/LICENSE_EXCEPTION
-    ONLY_IF_DIFFERENT
-  )
-
-  set(platform_extra ../res/Deskflow.icns ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_CURRENT_BINARY_DIR}/LICENSE_EXCEPTION)
+  set(platform_extra ../res/Deskflow.icns)
   set_source_files_properties(${platform_extra} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 
@@ -55,13 +49,16 @@ target_link_libraries(
   Qt6::Widgets
   Qt6::Network)
 
+install(
+  TARGETS ${target}
+  RUNTIME_DEPENDENCY_SET guiDeps
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  BUNDLE DESTINATION .
+)
+
 if(WIN32)
   set_target_properties(${target} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT")
-  install(
-    TARGETS ${target}
-    RUNTIME_DEPENDENCY_SET guiDeps
-    DESTINATION .
-  )
+
   install(RUNTIME_DEPENDENCY_SET guiDeps
     PRE_EXCLUDE_REGEXES
       "api-ms-win-.*"
@@ -69,7 +66,7 @@ if(WIN32)
       "^hvsifiletrust\\.dll$"
     POST_EXCLUDE_REGEXES
       ".*system32.*"
-    RUNTIME DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 
   set(QT_DEPENDS_DIR ${CMAKE_BINARY_DIR}/qt-depends)
@@ -91,7 +88,7 @@ if(WIN32)
 
   install(
     DIRECTORY ${QT_DEPENDS_DIR}/
-    DESTINATION .
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PATTERN "dx*.dll" EXCLUDE
   )
 
@@ -100,7 +97,6 @@ elseif(APPLE)
     INSTALL_RPATH "@loader_path/../Libraries;@loader_path/../Frameworks"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_BINARY_DIR}/deskflow.plist"
   )
-  install(TARGETS ${target} BUNDLE DESTINATION .)
 
   # Warning: Do not use for CI/production, as the `entitlements-dev.plist` file adds special 
   # entitlements that are only appropriate for local development.
@@ -129,6 +125,5 @@ elseif(APPLE)
     )
   endif()
 else()
-  install(TARGETS ${target} DESTINATION bin)
   generate_app_man(${target} "${CMAKE_PROJECT_DESCRIPTION} \\(GUI\\)")
 endif()

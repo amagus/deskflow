@@ -33,6 +33,7 @@ public:
   bool version() const;
   bool serverMode() const;
   bool clientMode() const;
+  bool singleInstanceOnly() const;
 
 private:
   [[noreturn]] void showHelpText() const;
@@ -40,6 +41,6 @@ private:
   QString m_helpText;
   bool m_clientMode = false;
   bool m_serverMode = false;
-  static const QString s_appName;
+  bool m_singleInstance = true;
   static const QString s_headerText;
 };

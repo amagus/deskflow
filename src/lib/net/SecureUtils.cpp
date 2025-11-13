@@ -148,23 +148,24 @@ int getCertLength(const std::string &path)
 
 QString formatSSLFingerprintColumns(const QByteArray &fingerprint)
 {
-  auto kmaxColumns = 24;
+  auto kMaxColumns = 24;
 
   QString hex = fingerprint.toHex(':').toUpper();
   if (hex.isEmpty()) {
     return hex;
   }
 
-  QString formatedString;
+  QString formattedString;
   while (!hex.isEmpty()) {
-    formatedString.append(hex.first(kmaxColumns));
-    hex.remove(0, kmaxColumns);
-    if (formatedString.endsWith(':'))
-      formatedString.removeLast();
-    formatedString.append('\n');
+    const auto take = std::min<size_t>(kMaxColumns, hex.size());
+    formattedString.append(hex.first(take));
+    hex.remove(0, take);
+    if (formattedString.endsWith(':'))
+      formattedString.removeLast();
+    formattedString.append('\n');
   }
-  formatedString.removeLast();
-  return formatedString;
+  formattedString.removeLast();
+  return formattedString;
 }
 
 /*
