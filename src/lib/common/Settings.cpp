@@ -12,6 +12,7 @@
 #include <QFile>
 #include <QRect>
 #include <QRegularExpression>
+#include <QStandardPaths>
 
 Settings *Settings::instance()
 {
@@ -29,9 +30,23 @@ void Settings::setSettingsFile(const QString &settingsFile)
   if (instance()->m_settings)
     instance()->m_settings->deleteLater();
 
-  instance()->m_settings = new QSettings(settingsFile, QSettings::IniFormat);
+  instance()->m_settings = new QSettings(settingsFile, QSettings::IniFormat, instance());
   instance()->m_settingsProxy->load(settingsFile);
   qInfo().noquote() << "settings file changed:" << instance()->m_settings->fileName();
+}
+
+void Settings::setStateFile(const QString &stateFile)
+{
+  if (instance()->m_stateSettings->fileName() == stateFile) {
+    qDebug("settings file already set, skipping");
+    return;
+  }
+
+  if (instance()->m_stateSettings)
+    instance()->m_stateSettings->deleteLater();
+
+  instance()->m_stateSettings = new QSettings(stateFile, QSettings::IniFormat, instance());
+  qInfo().noquote() << "settings file changed:" << instance()->m_stateSettings->fileName();
 }
 
 Settings::Settings(QObject *parent) : QObject(parent)
@@ -43,8 +58,8 @@ Settings::Settings(QObject *parent) : QObject(parent)
   if (QFile(portableFile).exists())
     fileToLoad = portableFile;
 #else
-  if (!qEnvironmentVariable("XDG_CONFIG_HOME").isEmpty())
-    fileToLoad = QStringLiteral("%1/%2/%2.conf").arg(qEnvironmentVariable("XDG_CONFIG_HOME"), kAppName);
+  if (const auto xdgConfigHome = qEnvironmentVariable("XDG_CONFIG_HOME"); !xdgConfigHome.isEmpty())
+    fileToLoad = QStringLiteral("%1/%2/%2.conf").arg(xdgConfigHome, kAppName);
 #endif
   else if (QFile(UserSettingFile).exists())
     fileToLoad = UserSettingFile;
@@ -53,10 +68,18 @@ Settings::Settings(QObject *parent) : QObject(parent)
   else
     fileToLoad = UserSettingFile;
 
-  m_settings = new QSettings(fileToLoad, QSettings::IniFormat);
+  m_settings = new QSettings(fileToLoad, QSettings::IniFormat, this);
   m_settingsProxy = std::make_shared<QSettingsProxy>();
   m_settingsProxy->load(fileToLoad);
   qInfo().noquote() << "initial settings file:" << m_settings->fileName();
+
+  const auto xdgStateHome = qEnvironmentVariable("XDG_STATE_HOME");
+  const auto stateBase = !xdgStateHome.isEmpty()
+                             ? xdgStateHome
+                             : QStandardPaths::standardLocations(QStandardPaths::GenericStateLocation).at(0);
+  const auto stateFile = QStringLiteral("%1/%2.state").arg(stateBase, kAppName);
+
+  m_stateSettings = new QSettings(stateFile, QSettings::IniFormat, this);
 }
 
 void Settings::cleanSettings()
@@ -67,6 +90,17 @@ void Settings::cleanSettings()
       m_settings->remove(key);
     if (m_settings->value(key).toString().isEmpty() && !m_settings->value(key).isValid())
       m_settings->remove(key);
+  }
+}
+
+void Settings::cleanStateSettings()
+{
+  const QStringList keys = m_stateKeys;
+  for (const QString &key : keys) {
+    if (!m_stateKeys.contains(key))
+      m_stateSettings->remove(key);
+    if (m_stateSettings->value(key).toString().isEmpty() && !m_stateSettings->value(key).isValid())
+      m_stateSettings->remove(key);
   }
 }
 
@@ -122,7 +156,8 @@ QVariant Settings::defaultValue(const QString &key)
     // The localhost name can contain spaces and non word characters
     QString name = QSysInfo::machineHostName().simplified();
     name.replace(QLatin1String(" "), QStringLiteral("_"));
-    name.replace(QRegularExpression(QLatin1String("\\W")), QLatin1String(""));
+    static const auto nameRegex = QRegularExpression(QLatin1String("\\W"));
+    name.replace(nameRegex, QLatin1String(""));
     return name;
   }
 
@@ -188,6 +223,7 @@ void Settings::save(bool emitSaving)
   if (emitSaving)
     Q_EMIT instance()->serverSettingsChanged();
   instance()->m_settings->sync();
+  instance()->m_stateSettings->sync();
 }
 
 QStringList Settings::validKeys()
@@ -243,21 +279,26 @@ QString Settings::tlsTrustedClientsDb()
 
 void Settings::setValue(const QString &key, const QVariant &value)
 {
-  if (instance()->m_settings->value(key) == value)
+  const bool useState = Settings::m_stateKeys.contains(key) && !instance()->isPortableMode();
+  auto settings = useState ? instance()->m_stateSettings : instance()->m_settings;
+
+  if (settings->value(key) == value)
     return;
 
   if (!value.isValid())
-    instance()->m_settings->remove(key);
+    settings->remove(key);
   else
-    instance()->m_settings->setValue(key, value);
+    settings->setValue(key, value);
 
-  instance()->m_settings->sync();
+  settings->sync();
   Q_EMIT instance()->settingsChanged(key);
 }
 
 QVariant Settings::value(const QString &key)
 {
-  return instance()->m_settings->value(key, defaultValue(key));
+  const bool useState = Settings::m_stateKeys.contains(key) && !instance()->isPortableMode();
+  auto settings = useState ? instance()->m_stateSettings : instance()->m_settings;
+  return settings->value(key, defaultValue(key));
 }
 
 void Settings::restoreDefaultSettings()

@@ -25,6 +25,12 @@ public:
 
 Q_SIGNALS:
   void newLine(const QString &line);
+
+private:
+  explicit Logger();
+  ~Logger();
+  void settingChanged(const QString &key);
+  bool m_guiDebug = false;
 };
 
 } // namespace deskflow::gui
