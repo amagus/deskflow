@@ -528,6 +528,10 @@ Nombres válidos:
         <source>This computer&apos;s name:</source>
         <translation type="unfinished">Nombre de esta computadora:</translation>
     </message>
+    <message>
+        <source>The Core executable could not be successfully started, although it does exist. Please check if you have sufficient permissions to run this program.</source>
+        <translation type="unfinished">No se pudo iniciar el archivo ejecutable principal, aunque existe. Compruebe si tiene permisos suficientes para ejecutar este programa.</translation>
+    </message>
 </context>
 <context>
     <name>NewScreenWidget</name>
@@ -1248,6 +1252,14 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
         <source>Enable GUI debug messages</source>
         <translation type="unfinished">Habilitar mensajes de depuración de la interfaz gráfica de usuario</translation>
     </message>
+    <message>
+        <source>Enable wl-clipboard support</source>
+        <translation type="unfinished">Habilitar la compatibilidad con wl-clipboard</translation>
+    </message>
+    <message>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Requires the wl-clipboard package&lt;/p&gt;&lt;p&gt;When using wl-clipboard v2.2.1, there is a focus stealing bug that may make Deskflow harder to use. This has been fixed when using the wl-clipboard master branch, unless your Compositor lacks wlroots-data-control protocol support.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Requiere el paquete wl-clipboard&lt;/p&gt;&lt;p&gt;Al usar wl-clipboard v2.2.1, existe un error que provoca la pérdida del foco y que puede dificultar el uso de Deskflow. Este error se ha corregido al usar la rama principal de wl-clipboard, a menos que su Compositor no sea compatible con el protocolo wlroots-data-control.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
 </context>
 <context>
     <name>TlsCertificate</name>
@@ -1278,6 +1290,40 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
         <source>LocalizedName</source>
         <extracomment>Replace with your Language name This is a required string</extracomment>
         <translation>Español</translation>
+    </message>
+</context>
+<context>
+    <name>validators::AliasValidator</name>
+    <message>
+        <source>Computer name cannot contain spaces</source>
+        <translation type="unfinished">El nombre de la computadora no puede contener espacios</translation>
+    </message>
+    <message>
+        <source>Aliases may not be ip addresses</source>
+        <translation type="unfinished">Los alias no pueden ser direcciones IP</translation>
+    </message>
+    <message>
+        <source>Contains invalid characters or is too long</source>
+        <translation type="unfinished">Contiene caracteres no válidos o es demasiado largo</translation>
+    </message>
+</context>
+<context>
+    <name>validators::ScreenNameValidator</name>
+    <message>
+        <source>Computer name cannot be empty</source>
+        <translation type="unfinished">El nombre de la computadora no puede estar vacío</translation>
+    </message>
+    <message>
+        <source>Computer name cannot contain spaces</source>
+        <translation type="unfinished">El nombre de la computadora no puede contener espacios</translation>
+    </message>
+    <message>
+        <source>Contains invalid characters or is too long</source>
+        <translation type="unfinished">Contiene caracteres no válidos o es demasiado largo</translation>
+    </message>
+    <message>
+        <source>A computer with this name already exists</source>
+        <translation type="unfinished">Ya existe un ordenador con este nombre</translation>
     </message>
 </context>
 </TS>

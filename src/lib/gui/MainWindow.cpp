@@ -49,7 +49,7 @@
 
 #include <memory>
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
@@ -407,9 +407,9 @@ void MainWindow::coreProcessError(CoreProcess::Error error)
     show();
     QMessageBox::warning(
         this, tr("Core cannot be started"),
-        "The Core executable could not be successfully started, "
-        "although it does exist. "
-        "Please check if you have sufficient permissions to run this program."
+        tr("The Core executable could not be successfully started, "
+           "although it does exist. "
+           "Please check if you have sufficient permissions to run this program.")
     );
   }
 }
@@ -628,7 +628,7 @@ void MainWindow::updateNetworkInfo()
   if (auto toolTipBase = tr("<p>If connecting via the hostname fails, try %1</p>"); ipList.count() < 2) {
     ui->lblIpAddresses->setToolTip(toolTipBase.arg(tr("the suggested IP.")));
   } else {
-    ui->lblIpAddresses->setToolTip(toolTipBase.arg(tr("one of the following IPs:<br/>%1").arg(ipList.join("br/>"))));
+    ui->lblIpAddresses->setToolTip(toolTipBase.arg(tr("one of the following IPs:<br/>%1").arg(ipList.join("<br/>"))));
   }
 }
 
@@ -1016,7 +1016,7 @@ void MainWindow::updateLocalFingerprint()
 
 void MainWindow::hide()
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
   macOSNativeHide();
 #else
   QMainWindow::hide();
@@ -1106,7 +1106,7 @@ void MainWindow::updateScreenName()
 
 void MainWindow::showAndActivate()
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
   forceAppActive();
 #endif
   showNormal();

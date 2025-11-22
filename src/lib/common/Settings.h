@@ -21,7 +21,7 @@ public:
 #if defined(Q_OS_WIN)
   inline const static auto UserDir = QStringLiteral("%1/AppData/Roaming/%2").arg(QDir::homePath(), kAppName);
   inline const static auto SystemDir = QStringLiteral("%1ProgramData/%2").arg(QDir::rootPath(), kAppName);
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_MACOS)
   inline const static auto UserDir = QStringLiteral("%1/Library/%2").arg(QDir::homePath(), kAppName);
   inline const static auto SystemDir = QStringLiteral("/Library/%1").arg(kAppName);
 #else
@@ -54,6 +54,7 @@ public:
     inline static const auto Display = QStringLiteral("core/display");
     inline static const auto UseHooks = QStringLiteral("core/useHooks");
     inline static const auto Language = QStringLiteral("core/language");
+    inline static const auto UseWlClipboard = QStringLiteral("core/wlClipboard");
   };
   struct Daemon
   {
@@ -149,6 +150,18 @@ private:
   void cleanSettings();
   void cleanStateSettings();
 
+  /**
+   * @brief write an initial screen name
+   */
+  void setupScreenName();
+
+  /**
+   * @brief cleanScreenName ensure a valid screenName from the provided one
+   * @param name any string to be used as the screenName
+   * @return a valid screeName
+   */
+  static QString cleanScreenName(const QString &name);
+
   QSettings *m_settings = nullptr;
   QSettings *m_stateSettings = nullptr;
   std::shared_ptr<QSettingsProxy> m_settingsProxy;
@@ -182,6 +195,7 @@ private:
     , Settings::Core::UpdateUrl
     , Settings::Core::Display
     , Settings::Core::UseHooks
+    , Settings::Core::UseWlClipboard
     , Settings::Core::Language
     , Settings::Daemon::Command
     , Settings::Daemon::Elevate
@@ -211,6 +225,7 @@ private:
       Settings::Gui::Autohide
     , Settings::Core::StartedBefore
     , Settings::Core::PreventSleep
+    , Settings::Core::UseWlClipboard
     , Settings::Server::ExternalConfig
     , Settings::Client::InvertScrollDirection
     , Settings::Log::ToFile
