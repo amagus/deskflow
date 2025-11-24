@@ -22,6 +22,7 @@
 #include "common/Settings.h"
 #include "common/UrlConstants.h"
 #include "gui/Messages.h"
+#include "gui/TlsUtility.h"
 #include "gui/core/CoreProcess.h"
 #include "gui/ipc/DaemonIpcClient.h"
 #include "gui/widgets/LogDock.h"
@@ -63,7 +64,6 @@ MainWindow::MainWindow()
       m_coreProcess(m_serverConfig),
       m_serverConnection(this, m_serverConfig),
       m_clientConnection(this),
-      m_tlsUtility(this),
       m_trayIcon{new QSystemTrayIcon(this)},
       m_guiDupeChecker{new QLocalServer(this)},
       m_daemonIpcClient{new ipc::DaemonIpcClient(this)},
@@ -140,28 +140,22 @@ MainWindow::MainWindow()
 
   qDebug().noquote() << "active settings path:" << Settings::settingsPath();
 
-  // Force generation of SHA256 for the localhost
-  if (Settings::value(Settings::Security::TlsEnabled).toBool()) {
+  // Force generation of a certificate on the host
+  if (TlsUtility::isEnabled()) {
     if (Settings::value(Settings::Security::KeySize).toInt() < 2048) {
       QMessageBox::information(
           this, kAppName,
           tr("Your current TLS key is smaller than the minimum allowed size, A new key 2048-bit key will be generated.")
       );
-      regenerateLocalFingerprints();
+      Settings::setValue(Settings::Security::KeySize, 2048);
     }
-    if (!QFile::exists(Settings::tlsLocalDb())) {
-      regenerateLocalFingerprints();
-      return;
-    }
-
-    FingerprintDatabase db;
-    db.read(Settings::tlsLocalDb());
-    if (db.fingerprints().isEmpty()) {
-      regenerateLocalFingerprints();
+    if (!TlsUtility::isCertValid()) {
+      generateCertificate();
+    } else {
+      m_fingerprint = {Fingerprint::Type::SHA256, TlsUtility::certFingerprint()};
     }
   }
 }
-
 MainWindow::~MainWindow()
 {
   m_guiDupeChecker->close();
@@ -371,8 +365,9 @@ void MainWindow::settingsChanged(const QString &key)
 
   if ((key == Settings::Security::Certificate) || (key == Settings::Security::KeySize) ||
       (key == Settings::Security::TlsEnabled) || (key == Settings::Security::CheckPeers)) {
-    if (m_tlsUtility.isEnabled() && !QFile::exists(Settings::value(Settings::Security::Certificate).toString())) {
-      m_tlsUtility.generateCertificate();
+    if (TlsUtility::isEnabled() && !TlsUtility::isCertValid()) {
+      qWarning() << tr("invalid certificate, generating a new one");
+      TlsUtility::generateCertificate();
     }
     updateSecurityIcon(m_lblSecurityStatus->isVisible());
     return;
@@ -495,7 +490,7 @@ void MainWindow::resetCore()
 
 void MainWindow::showMyFingerprint()
 {
-  FingerprintDialog fingerprintDialog(this, localFingerprint());
+  FingerprintDialog fingerprintDialog(this, m_fingerprint);
   fingerprintDialog.exec();
 }
 
@@ -581,7 +576,7 @@ void MainWindow::updateSecurityIcon(bool visible)
   if (!visible)
     return;
 
-  bool secureSocket = Settings::value(Settings::Security::TlsEnabled).toBool();
+  bool secureSocket = TlsUtility::isEnabled();
 
   const auto txt =
       secureSocket ? tr("%1 Encryption Enabled").arg(m_coreProcess.secureSocketVersion()) : tr("Encryption Disabled");
@@ -832,7 +827,7 @@ void MainWindow::checkFingerprint(const QString &line)
   }
 
   auto mode = isClient ? FingerprintDialogMode::Client : FingerprintDialogMode::Server;
-  FingerprintDialog fingerprintDialog(this, localFingerprint(), mode, sha256);
+  FingerprintDialog fingerprintDialog(this, m_fingerprint, mode, sha256);
 
   if (fingerprintDialog.exec() == QDialog::Accepted) {
     db.addTrusted(sha256);
@@ -1010,8 +1005,7 @@ void MainWindow::coreConnectionStateChanged(CoreConnectionState state)
 
 void MainWindow::updateLocalFingerprint()
 {
-  const bool tlsEnabled = Settings::value(Settings::Security::TlsEnabled).toBool();
-  m_btnFingerprint->setVisible(tlsEnabled && QFile::exists(Settings::tlsLocalDb()));
+  m_btnFingerprint->setVisible(TlsUtility::isEnabled() && !m_fingerprint.data.isEmpty());
 }
 
 void MainWindow::hide()
@@ -1176,43 +1170,17 @@ QString MainWindow::trustedFingerprintDatabase() const
   return isClient ? Settings::tlsTrustedServersDb() : Settings::tlsTrustedClientsDb();
 }
 
-bool MainWindow::regenerateLocalFingerprints()
+bool MainWindow::generateCertificate()
 {
   const auto certificate = Settings::value(Settings::Security::Certificate).toString();
-  if (!QFile::exists(certificate) && !m_tlsUtility.generateCertificate()) {
+  if (!QFile::exists(certificate) && !TlsUtility::generateCertificate()) {
     return false;
   }
 
-  if (TlsCertificate tls; !tls.generateFingerprint(certificate)) {
-    return false;
-  }
+  m_fingerprint = {Fingerprint::Type::SHA256, TlsUtility::certFingerprint()};
 
   updateLocalFingerprint();
   return true;
-}
-
-Fingerprint MainWindow::localFingerprint()
-{
-  if (!QFile::exists(Settings::tlsLocalDb())) {
-    if (regenerateLocalFingerprints())
-      return localFingerprint();
-  }
-
-  FingerprintDatabase db;
-  db.read(Settings::tlsLocalDb());
-  if (db.fingerprints().isEmpty()) {
-    if (regenerateLocalFingerprints())
-      return localFingerprint();
-  }
-
-  Fingerprint sha256Print;
-  for (const auto &f : std::as_const(db.fingerprints())) {
-    if (f.type == Fingerprint::Type::SHA256) {
-      sha256Print = f;
-      break;
-    }
-  }
-  return sha256Print;
 }
 
 void MainWindow::serverClientsChanged(const QStringList &clients)

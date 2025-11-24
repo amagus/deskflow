@@ -308,6 +308,10 @@ Do you want to connect to the server?
         <translation>您当前的 TLS 密钥长度小于允许的最小值，将生成一个新的 2048 位密钥。</translation>
     </message>
     <message>
+        <source>invalid certificate, generating a new one</source>
+        <translation type="unfinished">证书无效，正在生成新证书</translation>
+    </message>
+    <message>
         <source>A new version v%1 is available</source>
         <translation>新版本 v%1 可用</translation>
     </message>
@@ -707,6 +711,25 @@ Valid names:
     <message>
         <source>&lt;p&gt;There was a problem finding the %1 background service (daemon).&lt;/p&gt;&lt;p&gt;The background service makes %1 work with UAC prompts and the login screen.&lt;/p&gt;&lt;p&gt;If don&apos;t want to use the background service and intentionally stopped it, you can prevent it&apos;s use by disabling this feature.&lt;/p&gt;&lt;p&gt;If you did not stop the background service intentionally, there may be a problem with it. Please retry or try restarting the %1 service from the Windows services program.&lt;/p&gt;</source>
         <translation type="unfinished">&lt;p&gt;查找 %1 后台服务（守护进程）时出现问题。&lt;/p&gt;&lt;p&gt;%1 需后台服务来与 UAC 提示和登录屏幕配合工作。&lt;/p&gt;&lt;p&gt;如果您不想使用后台服务并已将其停止，可以通过禁用此功能来阻止使用它。&lt;/p&gt;&lt;p&gt;如果您并非有意停止后台服务，则可能存在问题。请重试，或尝试从 Windows 服务程序中重启 %1 服务。&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <source>failed to read key from certificate file: %1</source>
+        <extracomment>%1 will be replaced by the certificate path</extracomment>
+        <translation type="unfinished">无法从证书文件中读取密钥：%1</translation>
+    </message>
+    <message>
+        <source>failed to parse certificate file: %1</source>
+        <extracomment>%1 will be replaced by the certificate path</extracomment>
+        <translation type="unfinished">解析证书文件失败：%1</translation>
+    </message>
+    <message>
+        <source>key detected is the incorrect size</source>
+        <translation type="unfinished">检测到的密钥大小不正确。</translation>
+    </message>
+    <message>
+        <source>failed to read RSA or DSA key from certificate file: %1</source>
+        <extracomment>%1 will be replaced by the certificate path</extracomment>
+        <translation type="unfinished">无法从证书文件中读取 RSA 或 DSA 密钥：%1</translation>
     </message>
 </context>
 <context>
@@ -1260,29 +1283,6 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Requires the wl-clipboard package&lt;/p&gt;&lt;p&gt;When using wl-clipboard v2.2.1, there is a focus stealing bug that may make Deskflow harder to use. This has been fixed when using the wl-clipboard master branch, unless your Compositor lacks wlroots-data-control protocol support.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;需要 wl-clipboard 包&lt;/p&gt;&lt;p&gt;使用 wl-clipboard v2.2.1 时存在一个焦点抢夺 Bug，可能导致 Deskflow 使用不便。该问题已在 wl-clipboard 的 master 分支中修复，除非您的合成器不支持 wlroots-data-control 协议。&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
-    </message>
-</context>
-<context>
-    <name>TlsCertificate</name>
-    <message>
-        <source>could not read from default certificate file</source>
-        <translation>无法从默认证书文件读取</translation>
-    </message>
-    <message>
-        <source>could not load default certificate file to memory</source>
-        <translation>无法将默认证书文件加载到内存</translation>
-    </message>
-    <message>
-        <source>default certificate key file does not contain valid public key</source>
-        <translation>默认证书密钥文件不包含有效的公钥</translation>
-    </message>
-    <message>
-        <source>public key in default certificate key file is not RSA or DSA</source>
-        <translation>默认证书密钥文件中的公钥不是 RSA 或 DSA</translation>
-    </message>
-    <message>
-        <source>public key in default certificate key file is too small</source>
-        <translation>默认证书密钥文件中的公钥太短</translation>
     </message>
 </context>
 <context>

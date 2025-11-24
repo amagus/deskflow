@@ -13,8 +13,7 @@
 #include "common/I18N.h"
 #include "common/Settings.h"
 #include "gui/Messages.h"
-#include "gui/tls/TlsCertificate.h"
-#include "gui/tls/TlsUtility.h"
+#include "gui/TlsUtility.h"
 
 #include <QComboBox>
 #include <QDir>
@@ -27,8 +26,7 @@ SettingsDialog::SettingsDialog(QWidget *parent, const IServerConfig &serverConfi
     : QDialog(parent),
       ui{std::make_unique<Ui::SettingsDialog>()},
       m_serverConfig(serverConfig),
-      m_coreProcess(coreProcess),
-      m_tlsUtility(this)
+      m_coreProcess(coreProcess)
 {
 
   ui->setupUi(this);
@@ -90,7 +88,7 @@ void SettingsDialog::initConnections() const
 
 void SettingsDialog::regenCertificates()
 {
-  if (m_tlsUtility.generateCertificate()) {
+  if (TlsUtility::generateCertificate()) {
     QMessageBox::information(this, tr("TLS Certificate Regenerated"), tr("TLS certificate regenerated successfully."));
     const auto certificate = Settings::value(Settings::Security::Certificate).toString();
     updateKeyLengthOnFile(certificate);
@@ -234,11 +232,9 @@ void SettingsDialog::updateTlsControls()
 
   ui->comboTlsKeyLength->setCurrentText(Settings::value(Settings::Security::KeySize).toString());
 
-  const auto tlsEnabled = Settings::value(Settings::Security::TlsEnabled).toBool();
-
   ui->lineTlsCertPath->setText(certificate);
   ui->cbRequireClientCert->setChecked(Settings::value(Settings::Security::CheckPeers).toBool());
-  ui->groupSecurity->setChecked(tlsEnabled);
+  ui->groupSecurity->setChecked(TlsUtility::isEnabled());
 
   ui->groupSecurity->setEnabled(Settings::isWritable());
 
@@ -266,12 +262,11 @@ bool SettingsDialog::isClientMode() const
 
 void SettingsDialog::updateKeyLengthOnFile(const QString &path)
 {
-  TlsCertificate ssl;
   if (!QFile(path).exists()) {
     qFatal("tls certificate file not found: %s", qUtf8Printable(path));
   }
 
-  auto length = ssl.getCertKeyLength(path);
+  auto length = TlsUtility::getCertKeyLength(path);
   auto labelIcon = QPixmap(QIcon::fromTheme(QIcon::ThemeIcon::SecurityLow).pixmap(24, 24));
   if (length == 2048)
     labelIcon = QPixmap(QIcon::fromTheme(QStringLiteral("security-medium")).pixmap(24, 24));

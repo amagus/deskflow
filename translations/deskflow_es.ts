@@ -456,6 +456,10 @@ Do you want to connect to the server?
         <translation type="unfinished">%1 está iniciando...</translation>
     </message>
     <message>
+        <source>invalid certificate, generating a new one</source>
+        <translation type="unfinished">certificado no válido, generando uno nuevo</translation>
+    </message>
+    <message>
         <source>%1 will retry in a moment...</source>
         <translation type="unfinished">%1 lo intentará nuevamente en un momento...</translation>
     </message>
@@ -706,6 +710,25 @@ Nombres válidos:
     <message>
         <source>&lt;p&gt;There was a problem finding the %1 background service (daemon).&lt;/p&gt;&lt;p&gt;The background service makes %1 work with UAC prompts and the login screen.&lt;/p&gt;&lt;p&gt;If don&apos;t want to use the background service and intentionally stopped it, you can prevent it&apos;s use by disabling this feature.&lt;/p&gt;&lt;p&gt;If you did not stop the background service intentionally, there may be a problem with it. Please retry or try restarting the %1 service from the Windows services program.&lt;/p&gt;</source>
         <translation type="unfinished">&lt;p&gt;Hubo un problema al encontrar el servicio en segundo plano %1 (daemon).&lt;/p&gt;&lt;p&gt;El servicio en segundo plano hace que %1 funcione con los avisos de UAC y la pantalla de inicio de sesión.&lt;/p&gt;&lt;p&gt;Si no desea usar el servicio en segundo plano y lo detuvo intencionalmente, puede evitar su uso deshabilitando esta función.&lt;/p&gt;&lt;p&gt;Si no detuvo el servicio en segundo plano intencionalmente, es posible que haya un problema. Vuelva a intentarlo o reinicie el servicio %1 desde el programa de servicios de Windows.&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <source>failed to read key from certificate file: %1</source>
+        <extracomment>%1 will be replaced by the certificate path</extracomment>
+        <translation type="unfinished">No se pudo leer la clave del archivo de certificado: %1</translation>
+    </message>
+    <message>
+        <source>failed to parse certificate file: %1</source>
+        <extracomment>%1 will be replaced by the certificate path</extracomment>
+        <translation type="unfinished">Error al analizar el archivo de certificado: %1</translation>
+    </message>
+    <message>
+        <source>key detected is the incorrect size</source>
+        <translation type="unfinished">La clave detectada es de tamaño incorrecto</translation>
+    </message>
+    <message>
+        <source>failed to read RSA or DSA key from certificate file: %1</source>
+        <extracomment>%1 will be replaced by the certificate path</extracomment>
+        <translation type="unfinished">No se pudo leer la clave RSA o DSA del archivo de certificado: %1</translation>
     </message>
 </context>
 <context>
@@ -1259,29 +1282,6 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
     <message>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Requires the wl-clipboard package&lt;/p&gt;&lt;p&gt;When using wl-clipboard v2.2.1, there is a focus stealing bug that may make Deskflow harder to use. This has been fixed when using the wl-clipboard master branch, unless your Compositor lacks wlroots-data-control protocol support.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Requiere el paquete wl-clipboard&lt;/p&gt;&lt;p&gt;Al usar wl-clipboard v2.2.1, existe un error que provoca la pérdida del foco y que puede dificultar el uso de Deskflow. Este error se ha corregido al usar la rama principal de wl-clipboard, a menos que su Compositor no sea compatible con el protocolo wlroots-data-control.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
-    </message>
-</context>
-<context>
-    <name>TlsCertificate</name>
-    <message>
-        <source>could not read from default certificate file</source>
-        <translation type="unfinished">No se pudo leer el archivo de certificado predeterminado</translation>
-    </message>
-    <message>
-        <source>could not load default certificate file to memory</source>
-        <translation type="unfinished">No se pudo cargar el archivo de certificado predeterminado en la memoria</translation>
-    </message>
-    <message>
-        <source>default certificate key file does not contain valid public key</source>
-        <translation type="unfinished">El archivo de clave de certificado predeterminado no contiene una clave pública válida</translation>
-    </message>
-    <message>
-        <source>public key in default certificate key file is not RSA or DSA</source>
-        <translation type="unfinished">La clave pública en el archivo de clave de certificado predeterminado no es RSA ni DSA</translation>
-    </message>
-    <message>
-        <source>public key in default certificate key file is too small</source>
-        <translation type="unfinished">La clave pública en el archivo de clave del certificado predeterminado es demasiado pequeña</translation>
     </message>
 </context>
 <context>
