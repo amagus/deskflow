@@ -727,9 +727,9 @@ Valid names:
         <translation type="unfinished">检测到的密钥大小不正确。</translation>
     </message>
     <message>
-        <source>failed to read RSA or DSA key from certificate file: %1</source>
+        <source>failed to read RSA key from certificate file: %1</source>
         <extracomment>%1 will be replaced by the certificate path</extracomment>
-        <translation type="unfinished">无法从证书文件中读取 RSA 或 DSA 密钥：%1</translation>
+        <translation type="unfinished">无法从证书文件中读取 RSA 密钥：%1</translation>
     </message>
 </context>
 <context>
@@ -1060,6 +1060,10 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Browse for a config file</source>
         <translation>浏览配置文件</translation>
+    </message>
+    <message>
+        <source>Enable lock to computer at startup</source>
+        <translation type="unfinished">启动时启用锁定到计算机</translation>
     </message>
 </context>
 <context>

@@ -22,12 +22,12 @@ namespace deskflow {
 
 namespace {
 
-const EVP_MD *digestForType(Fingerprint::Type type)
+const EVP_MD *digestForType(QCryptographicHash::Algorithm type)
 {
   switch (type) {
-  case Fingerprint::Type::SHA1:
+  case QCryptographicHash::Sha1:
     return EVP_sha1();
-  case Fingerprint::Type::SHA256:
+  case QCryptographicHash::Sha256:
     return EVP_sha256();
   default:
     break;
@@ -45,7 +45,7 @@ QString formatSSLFingerprint(const QByteArray &fingerprint, bool enableSeparator
     return fingerprint.toHex().toUpper();
 }
 
-Fingerprint sslCertFingerprint(const X509 *cert, Fingerprint::Type type)
+Fingerprint sslCertFingerprint(const X509 *cert, QCryptographicHash::Algorithm type)
 {
   if (!cert) {
     throw std::runtime_error("certificate is null");
@@ -60,23 +60,6 @@ Fingerprint sslCertFingerprint(const X509 *cert, Fingerprint::Type type)
 
   QByteArray digestArray(reinterpret_cast<const char *>(digest), digestLength);
   return {type, digestArray};
-}
-
-Fingerprint pemFileCertFingerprint(const std::string &path, Fingerprint::Type type)
-{
-  auto fp = fopenUtf8Path(path, "r");
-  if (!fp) {
-    throw std::runtime_error("could not open certificate path");
-  }
-  auto fileClose = finally([fp]() { std::fclose(fp); });
-
-  X509 *cert = PEM_read_X509(fp, nullptr, nullptr, nullptr);
-  if (!cert) {
-    throw std::runtime_error("certificate could not be parsed");
-  }
-  auto certFree = finally([cert]() { X509_free(cert); });
-
-  return sslCertFingerprint(cert, type);
 }
 
 void generatePemSelfSignedCert(const std::string &path, int keyLength)
@@ -118,34 +101,6 @@ void generatePemSelfSignedCert(const std::string &path, int keyLength)
   PEM_write_X509(fp, cert);
 }
 
-int getCertLength(const std::string &path)
-{
-  auto fp = fopenUtf8Path(path.c_str(), "r");
-  if (!fp) {
-    throw std::runtime_error("could not open certificate output path");
-    return -1;
-  }
-
-  EVP_PKEY *privateKey = PEM_read_PrivateKey(fp, nullptr, nullptr, nullptr);
-
-  fclose(fp);
-
-  if (!privateKey) {
-    throw std::runtime_error("could not open certificate");
-    return -1;
-  }
-
-  if (EVP_PKEY_base_id(privateKey) != EVP_PKEY_RSA) {
-    throw std::runtime_error("not an RSA key");
-    return -1;
-  }
-  int size = EVP_PKEY_get_bits(privateKey);
-
-  EVP_PKEY_free(privateKey);
-
-  return size;
-}
-
 QString formatSSLFingerprintColumns(const QByteArray &fingerprint)
 {
   auto kMaxColumns = 24;
@@ -160,9 +115,9 @@ QString formatSSLFingerprintColumns(const QByteArray &fingerprint)
     const auto take = std::min<size_t>(kMaxColumns, hex.size());
     formattedString.append(hex.first(take));
     hex.remove(0, take);
-    if (formattedString.endsWith(':'))
+    if (formattedString.endsWith(QLatin1Char(':')))
       formattedString.removeLast();
-    formattedString.append('\n');
+    formattedString.append(QLatin1Char('\n'));
   }
   formattedString.removeLast();
   return formattedString;
@@ -200,7 +155,7 @@ QString generateFingerprintArt(const QByteArray &rawDigest)
   const auto baseSize = 8;
   const auto rows = (baseSize + 1);
   const auto columns = (baseSize * 2 + 1);
-  const QString characterPool = " .o+=*BOX@%&#/^SE";
+  const QString characterPool = QStringLiteral(" .o+=*BOX@%&#/^SE");
   const std::size_t len = characterPool.length() - 1;
 
   std::uint8_t field[columns][rows];
@@ -233,17 +188,17 @@ QString generateFingerprintArt(const QByteArray &rawDigest)
 
   QString result;
   result.reserve((columns + 3) * (rows + 2));
-  result.append("╔═════════════════╗\n");
+  result.append(QStringLiteral("╔═════════════════╗\n"));
 
   /* output content */
   for (y = 0; y < rows; y++) {
-    result.append("║");
+    result.append(QStringLiteral("║"));
     for (x = 0; x < columns; x++)
       result.append(characterPool.at(std::min<int>(field[x][y], len)));
-    result.append("║\n");
+    result.append(QStringLiteral("║\n"));
   }
 
-  result.append("╚═════════════════╝");
+  result.append(QStringLiteral("╚═════════════════╝"));
   return result;
 }
 

@@ -726,9 +726,9 @@ Nombres válidos:
         <translation type="unfinished">La clave detectada es de tamaño incorrecto</translation>
     </message>
     <message>
-        <source>failed to read RSA or DSA key from certificate file: %1</source>
+        <source>failed to read RSA key from certificate file: %1</source>
         <extracomment>%1 will be replaced by the certificate path</extracomment>
-        <translation type="unfinished">No se pudo leer la clave RSA o DSA del archivo de certificado: %1</translation>
+        <translation type="unfinished">No se pudo leer la clave RSA del archivo de certificado: %1</translation>
     </message>
 </context>
 <context>
@@ -1059,6 +1059,10 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
     <message>
         <source>Browse for a config file</source>
         <translation type="unfinished">Busque un archivo de configuración</translation>
+    </message>
+    <message>
+        <source>Enable lock to computer at startup</source>
+        <translation type="unfinished">Activar el bloqueo del ordenador al iniciar</translation>
     </message>
 </context>
 <context>

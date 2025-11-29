@@ -729,9 +729,9 @@ Valid names:
         <translation type="unfinished">обнаружен ключ неправильного размера</translation>
     </message>
     <message>
-        <source>failed to read RSA or DSA key from certificate file: %1</source>
+        <source>failed to read RSA key from certificate file: %1</source>
         <extracomment>%1 will be replaced by the certificate path</extracomment>
-        <translation type="unfinished">не удалось прочитать ключ RSA или DSA из файла сертификата: %1</translation>
+        <translation type="unfinished">не удалось прочитать ключ RSA из файла сертификата: %1</translation>
     </message>
 </context>
 <context>
@@ -1063,6 +1063,10 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Browse for a config file</source>
         <translation>Выбрать файл для конфигурации</translation>
+    </message>
+    <message>
+        <source>Enable lock to computer at startup</source>
+        <translation type="unfinished">Включить блокировку компьютера при запуске</translation>
     </message>
 </context>
 <context>

@@ -727,9 +727,9 @@ Valid names:
         <translation type="unfinished">検出されたキーのサイズが正しくありません</translation>
     </message>
     <message>
-        <source>failed to read RSA or DSA key from certificate file: %1</source>
+        <source>failed to read RSA key from certificate file: %1</source>
         <extracomment>%1 will be replaced by the certificate path</extracomment>
-        <translation type="unfinished">証明書ファイルから RSA または DSA キーを読み取ることができませんでした: %1</translation>
+        <translation type="unfinished">証明書ファイルから RSA キーを読み取ることができませんでした: %1</translation>
     </message>
 </context>
 <context>
@@ -1060,6 +1060,10 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Browse for a config file</source>
         <translation>設定ファイルを選択</translation>
+    </message>
+    <message>
+        <source>Enable lock to computer at startup</source>
+        <translation>起動時にコンピューター間移動のロックを有効にする</translation>
     </message>
 </context>
 <context>
