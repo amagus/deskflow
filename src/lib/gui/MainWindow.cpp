@@ -306,7 +306,12 @@ void MainWindow::connectSlots()
 
   connect(&m_clientConnection, &ClientConnection::requestShowError, this, &MainWindow::showClientError);
 
-  connect(ui->btnToggleCore, &QPushButton::clicked, m_actionStartCore, &QAction::trigger, Qt::UniqueConnection);
+  if (Settings::value(Settings::Gui::AutoStartCore).toBool()) {
+    connect(ui->btnToggleCore, &QPushButton::clicked, m_actionStopCore, &QAction::trigger, Qt::UniqueConnection);
+  } else {
+    connect(ui->btnToggleCore, &QPushButton::clicked, m_actionStartCore, &QAction::trigger, Qt::UniqueConnection);
+  }
+
   connect(ui->btnRestartCore, &QPushButton::clicked, this, &MainWindow::resetCore);
 
   connect(ui->lineHostname, &QLineEdit::returnPressed, ui->btnRestartCore, &QPushButton::click);
@@ -526,16 +531,6 @@ void MainWindow::updateModeControls(bool serverMode)
   if (m_coreProcess.isStarted() && m_coreProcess.mode() != expectedCoreMode)
     m_coreProcess.stop();
   m_coreProcess.setMode(expectedCoreMode);
-  if (serverMode) {
-    // The server can run without any clients configured, and this is actually
-    // what you'll want to do the first time since you'll be prompted when an
-    // unrecognized client tries to connect.
-    const auto startedBefore = Settings::value(Settings::Core::StartedBefore).toBool();
-    if (!startedBefore && !m_coreProcess.isStarted()) {
-      qDebug() << "auto-starting core server for first time";
-      m_coreProcess.start();
-    }
-  }
   updateModeControlLabels();
 
   toggleCanRunCore((!serverMode && !ui->lineHostname->text().isEmpty()) || serverMode);
@@ -672,7 +667,7 @@ void MainWindow::open()
     qDebug() << "update check disabled";
   }
 
-  if (Settings::value(Settings::Core::StartedBefore).toBool()) {
+  if (Settings::value(Settings::Gui::AutoStartCore).toBool()) {
     if (ui->rbModeClient->isChecked() && ui->lineHostname->text().isEmpty())
       return;
     startCore();
@@ -756,7 +751,10 @@ void MainWindow::setTrayIcon()
 
   QString themeIcon = kRevFqdnName;
   if (!Settings::value(Settings::Gui::SymbolicTrayIcon).toBool()) {
-    m_trayIcon->setIcon(QIcon(fallbackPath.arg(kAppId, QStringLiteral("dark"), themeIcon)));
+    if (deskflow::platform::isMac())
+      m_trayIcon->setIcon(QIcon::fromTheme(themeIcon));
+    else
+      m_trayIcon->setIcon(QIcon(fallbackPath.arg(kAppId, QStringLiteral("dark"), themeIcon)));
     return;
   }
 
@@ -868,6 +866,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
   if (m_saveOnExit) {
     Settings::setValue(Settings::Gui::WindowGeometry, geometry());
+    Settings::setValue(Settings::Gui::AutoStartCore, m_coreProcess.isStarted());
   }
   qDebug() << "quitting application";
 
@@ -881,9 +880,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::showFirstConnectedMessage()
 {
-  if (Settings::value(Settings::Core::StartedBefore).toBool())
+  if (Settings::value(Settings::Gui::ShownFirstConnectedMessage).toBool())
     return;
-  Settings::setValue(Settings::Core::StartedBefore, true);
+  Settings::setValue(Settings::Gui::ShownFirstConnectedMessage, true);
 
   const auto isServer = m_coreProcess.mode() == CoreMode::Server;
   const auto closeToTray = Settings::value(Settings::Gui::CloseToTray).toBool();
@@ -957,11 +956,14 @@ void MainWindow::coreProcessStateChanged(CoreProcessState state)
 {
   updateStatus();
 
-  if (state == CoreProcessState::Started && !Settings::value(Settings::Core::StartedBefore).toBool()) {
+  if (state == CoreProcessState::Started) {
     qDebug() << "recording that core has started";
-    Settings::setValue(Settings::Core::StartedBefore, true);
-    if (m_coreProcess.mode() == CoreMode::Server) {
+    Settings::setValue(Settings::Gui::AutoStartCore, true);
+    if (m_coreProcess.mode() == CoreMode::Server &&
+        !Settings::value(Settings::Gui::ShownServerFirstStartMessage).toBool()) {
+      qDebug() << "starting core server for first time";
       messages::showFirstServerStartMessage(this);
+      Settings::setValue(Settings::Gui::ShownServerFirstStartMessage, true);
     }
   }
 
@@ -1107,6 +1109,7 @@ void MainWindow::updateScreenName()
 
 void MainWindow::showAndActivate()
 {
+  const auto wasVisible = isVisible();
 #ifdef Q_OS_MACOS
   forceAppActive();
 #endif
@@ -1115,7 +1118,8 @@ void MainWindow::showAndActivate()
   activateWindow();
   m_actionRestore->setVisible(false);
   m_actionMinimize->setVisible(true);
-  restoreWindow();
+  if (!wasVisible)
+    restoreWindow();
 }
 
 void MainWindow::showHostNameEditor()
@@ -1239,11 +1243,15 @@ void MainWindow::remoteHostChanged(const QString &newRemoteHost)
 
 void MainWindow::showClientError(deskflow::client::ErrorType error, const QString &address)
 {
+  if (!Settings::value(Settings::Gui::ShowGenericClientFailureDialog).toBool())
+    return;
+
   if (m_clientErrorVisible)
     return;
+
   m_clientErrorVisible = true;
-  deskflow::gui::messages::showClientConnectError(this, error, address);
   showAndActivate();
+  deskflow::gui::messages::showClientConnectError(this, error, address);
   m_clientErrorVisible = false;
 }
 

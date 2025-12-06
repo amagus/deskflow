@@ -11,7 +11,6 @@
 #include "arch/ArchException.h"
 #include "base/IEventQueue.h"
 #include "base/Log.h"
-#include "base/Path.h"
 #include "common/Settings.h"
 #include "mt/Lock.h"
 #include "net/FingerprintDatabase.h"
@@ -21,7 +20,6 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <iterator>
 #include <memory>
 #include <openssl/err.h>
@@ -199,7 +197,6 @@ TCPSocket::JobResult SecureSocket::doWrite()
     status = secureWrite(s_staticBuffer, bufferSize, bytesWrote);
     if (status > 0) {
       s_retry = false;
-      bufferSize = 0;
     } else if (status < 0) {
       return Break;
     } else if (status == 0) {
@@ -288,41 +285,35 @@ void SecureSocket::initSsl(bool server)
   initContext(server);
 }
 
-bool SecureSocket::loadCertificates(const std::string &filename)
+bool SecureSocket::loadCertificate(const QString &filename)
 {
   std::scoped_lock ssl_lock{ssl_mutex_};
 
-  if (filename.empty()) {
+  if (filename.isEmpty()) {
     SslLogger::logError("tls certificate is not specified");
     return false;
-  } else {
-    std::ifstream file(deskflow::filesystem::path(filename));
-    bool exist = file.good();
-    file.close();
-
-    if (!exist) {
-      std::string errorMsg("tls certificate doesn't exist: ");
-      errorMsg.append(filename);
-      SslLogger::logError(errorMsg.c_str());
-      return false;
-    }
   }
 
-  int r = 0;
-  r = SSL_CTX_use_certificate_file(m_ssl->m_context, filename.c_str(), SSL_FILETYPE_PEM);
-  if (r <= 0) {
+  if (!QFile::exists(filename)) {
+    std::string errorMsg("tls certificate doesn't exist: ");
+    errorMsg.append(filename.toStdString());
+    SslLogger::logError(errorMsg.c_str());
+    return false;
+  }
+
+  const auto fName = filename.toStdString();
+
+  if (SSL_CTX_use_certificate_file(m_ssl->m_context, fName.c_str(), SSL_FILETYPE_PEM) <= 0) {
     SslLogger::logError("could not use tls certificate");
     return false;
   }
 
-  r = SSL_CTX_use_PrivateKey_file(m_ssl->m_context, filename.c_str(), SSL_FILETYPE_PEM);
-  if (r <= 0) {
+  if (SSL_CTX_use_PrivateKey_file(m_ssl->m_context, fName.c_str(), SSL_FILETYPE_PEM) <= 0) {
     SslLogger::logError("could not use tls private key");
     return false;
   }
 
-  r = SSL_CTX_check_private_key(m_ssl->m_context);
-  if (!r) {
+  if (!SSL_CTX_check_private_key(m_ssl->m_context)) {
     SslLogger::logError("could not verify tls private key");
     return false;
   }
@@ -461,10 +452,7 @@ int SecureSocket::secureAccept(int socket)
 
 int SecureSocket::secureConnect(int socket)
 {
-
-  std::string certDir = Settings::value(Settings::Security::Certificate).toString().toStdString();
-
-  if (!loadCertificates(certDir)) {
+  if (!loadCertificate(Settings::value(Settings::Security::Certificate).toString())) {
     LOG_ERR("could not load client certificates");
     disconnect();
     return -1;
@@ -479,9 +467,9 @@ int SecureSocket::secureConnect(int socket)
 
   LOG_DEBUG2("connecting secure socket");
 
-  // TODO: S1-1766, enable hostname verification.
-  // the cert will need to be installed in the trusted store on the client.
-  // we'll probably need to find a way of securely transferring the cert.
+  // enable hostname verification.
+  const auto name = Settings::value(Settings::Core::ScreenName).toString().toStdString();
+  SSL_set1_host(m_ssl->m_ssl, name.c_str());
   int r = SSL_connect(m_ssl->m_ssl);
 
   static int retry;

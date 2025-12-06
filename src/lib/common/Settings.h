@@ -49,7 +49,6 @@ public:
     inline static const auto PreventSleep = QStringLiteral("core/preventSleep");
     inline static const auto ProcessMode = QStringLiteral("core/processMode");
     inline static const auto ScreenName = QStringLiteral("core/screenName");
-    inline static const auto StartedBefore = QStringLiteral("core/startedBefore");
     inline static const auto UpdateUrl = QStringLiteral("core/updateUrl");
     inline static const auto Display = QStringLiteral("core/display");
     inline static const auto UseHooks = QStringLiteral("core/useHooks");
@@ -66,6 +65,7 @@ public:
   struct Gui
   {
     inline static const auto Autohide = QStringLiteral("gui/autoHide");
+    inline static const auto AutoStartCore = QStringLiteral("gui/startCoreWithGui");
     inline static const auto AutoUpdateCheck = QStringLiteral("gui/enableUpdateCheck");
     inline static const auto CloseReminder = QStringLiteral("gui/closeReminder");
     inline static const auto CloseToTray = QStringLiteral("gui/closeToTray");
@@ -73,6 +73,8 @@ public:
     inline static const auto SymbolicTrayIcon = QStringLiteral("gui/symbolicTrayIcon");
     inline static const auto WindowGeometry = QStringLiteral("gui/windowGeometry");
     inline static const auto ShowGenericClientFailureDialog = QStringLiteral("gui/showGenericClientFailureDialog");
+    inline static const auto ShownFirstConnectedMessage = QStringLiteral("gui/shownFirstConnectedMessage");
+    inline static const auto ShownServerFirstStartMessage = QStringLiteral("gui/shownServerFirstStartMessage");
   };
   struct Log
   {
@@ -190,7 +192,6 @@ private:
     , Settings::Core::PreventSleep
     , Settings::Core::ProcessMode
     , Settings::Core::ScreenName
-    , Settings::Core::StartedBefore
     , Settings::Core::UpdateUrl
     , Settings::Core::Display
     , Settings::Core::UseHooks
@@ -204,6 +205,7 @@ private:
     , Settings::Log::ToFile
     , Settings::Log::GuiDebug
     , Settings::Gui::Autohide
+    , Settings::Gui::AutoStartCore
     , Settings::Gui::AutoUpdateCheck
     , Settings::Gui::CloseReminder
     , Settings::Gui::CloseToTray
@@ -211,6 +213,8 @@ private:
     , Settings::Gui::SymbolicTrayIcon
     , Settings::Gui::WindowGeometry
     , Settings::Gui::ShowGenericClientFailureDialog
+    , Settings::Gui::ShownFirstConnectedMessage
+    , Settings::Gui::ShownServerFirstStartMessage
     , Settings::Security::Certificate
     , Settings::Security::CheckPeers
     , Settings::Security::KeySize
@@ -222,7 +226,9 @@ private:
   // When checking the default values this list contains the ones that default to false.
   inline static const QStringList m_defaultFalseValues = {
       Settings::Gui::Autohide
-    , Settings::Core::StartedBefore
+    , Settings::Gui::AutoStartCore
+    , Settings::Gui::ShownFirstConnectedMessage
+    , Settings::Gui::ShownServerFirstStartMessage
     , Settings::Core::PreventSleep
     , Settings::Core::UseWlClipboard
     , Settings::Server::ExternalConfig
