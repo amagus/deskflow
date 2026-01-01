@@ -156,13 +156,13 @@ QVariant Settings::defaultValue(const QString &key)
     return QRect();
 
   if (key == Security::Certificate)
-    return QStringLiteral("%1/%2").arg(Settings::tlsDir(), kTlsCertificateFilename);
+    return QStringLiteral("%1/%2.pem").arg(Settings::tlsDir(), kAppId);
 
   if (key == Security::KeySize)
     return 2048;
 
   if (key == Log::File)
-    return QStringLiteral("%1/%2").arg(QDir::homePath(), kDefaultLogFile);
+    return QStringLiteral("%1/%2.log").arg(QDir::homePath(), kAppId);
 
   if (key == Log::Level)
     return 4; // INFO
@@ -170,7 +170,7 @@ QVariant Settings::defaultValue(const QString &key)
   if (key == Daemon::Elevate)
     return !Settings::isPortableMode();
 
-  if (key == Core::UpdateUrl)
+  if (key == Gui::UpdateCheckUrl)
     return kUrlUpdateCheck;
 
   if (key == Server::ExternalConfigFile)
@@ -188,7 +188,7 @@ QVariant Settings::defaultValue(const QString &key)
   }
 
   if (key == Daemon::LogFile)
-    return QStringLiteral("%1/%2").arg(Settings::settingsPath(), kDaemonLogFilename);
+    return QStringLiteral("%1/%2-daemon.log").arg(Settings::settingsPath(), kAppId);
 
   if (key == Client::ScrollSpeed)
     return 120;
@@ -247,17 +247,17 @@ QString Settings::settingsPath()
 
 QString Settings::tlsDir()
 {
-  return QStringLiteral("%1/%2").arg(instance()->settingsPath(), kTlsDirName);
+  return QStringLiteral("%1/tls").arg(instance()->settingsPath());
 }
 
 QString Settings::tlsTrustedServersDb()
 {
-  return QStringLiteral("%1/%2").arg(instance()->tlsDir(), kTlsFingerprintTrustedServersFilename);
+  return QStringLiteral("%1/trusted-servers").arg(instance()->tlsDir());
 }
 
 QString Settings::tlsTrustedClientsDb()
 {
-  return QStringLiteral("%1/%2").arg(instance()->tlsDir(), kTlsFingerprintTrustedClientsFilename);
+  return QStringLiteral("%1/trusted-clients").arg(instance()->tlsDir());
 }
 
 void Settings::setValue(const QString &key, const QVariant &value)

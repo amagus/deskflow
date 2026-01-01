@@ -101,6 +101,7 @@ elseif(UNIX)
     XDGKeyUtil.cpp
   )
   if (BUILD_X11_SUPPORT)
+    configure_file(XWindowsConfig.h.in XWindowsConfig.h @ONLY)
     list(APPEND PLATFORM_SOURCES
       XWindowsClipboard.cpp
       XWindowsClipboard.h
@@ -126,6 +127,7 @@ elseif(UNIX)
       XWindowsScreenSaver.h
       XWindowsUtil.cpp
       XWindowsUtil.h
+      ${CMAKE_CURRENT_BINARY_DIR}/XWindowsConfig.h
     )
   endif()
 
@@ -154,27 +156,10 @@ elseif(UNIX)
   endif()
 endif()
 
-if(APPLE)
-  list(APPEND inc /System/Library/Frameworks)
-endif()
-include_directories(${inc})
-
 # wayland.h is included to check for wayland support
 add_library(platform STATIC ${PLATFORM_SOURCES})
 
 target_link_libraries(platform client ${libs})
-
-macro(link_wayland_libs)
-  target_compile_definitions(platform PUBLIC WINAPI_LIBEI WINAPI_LIBPORTAL HAVE_LIBPORTAL_INPUTCAPTURE)
-
-  target_link_libraries(platform ${LIBXKBCOMMON_LINK_LIBRARIES}
-                        ${GLIB2_LINK_LIBRARIES} ${LIBM_LIBRARIES}
-                        ${LIBEI_LINK_LIBRARIES} ${LIBPORTAL_LINK_LIBRARIES}
-  )
-
-  target_include_directories(platform PUBLIC ${LIBEI_INCLUDE_DIRS} ${LIBPORTAL_INCLUDE_DIRS})
-
-endmacro()
 
 if(UNIX)
   target_link_libraries(
@@ -185,19 +170,20 @@ if(UNIX)
     client
     ${libs})
 
-  if(NOT APPLE)
-
+  if(APPLE)
+    find_library(COCOA_LIBRARY Cocoa)
+    target_link_libraries(platform ${COCOA_LIBRARY})
+  else()
     if(${LIBXKBCOMMON_VERSION} VERSION_GREATER_EQUAL "1.10")
       target_compile_definitions(platform PRIVATE HAVE_XKB_KEYMAP_MOD_GET_MASK=1)
     endif()
-
-    target_link_libraries(platform Qt6::DBus)
-
-    link_wayland_libs()
+    target_compile_definitions(platform PUBLIC WINAPI_LIBEI WINAPI_LIBPORTAL HAVE_LIBPORTAL_INPUTCAPTURE)
+    target_include_directories(platform PUBLIC ${LIBEI_INCLUDE_DIRS} ${LIBPORTAL_INCLUDE_DIRS})
+    target_link_libraries(
+      platform
+      Qt6::DBus
+      ${LIBXKBCOMMON_LINK_LIBRARIES}
+      ${GLIB2_LINK_LIBRARIES} ${LIBM_LIBRARIES}
+      ${LIBEI_LINK_LIBRARIES} ${LIBPORTAL_LINK_LIBRARIES})
   endif()
-endif()
-
-if(APPLE)
-  find_library(COCOA_LIBRARY Cocoa)
-  target_link_libraries(platform ${COCOA_LIBRARY})
 endif()
