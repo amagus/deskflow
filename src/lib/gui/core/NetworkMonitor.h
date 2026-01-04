@@ -53,7 +53,7 @@ public:
   QList<QHostAddress> getAvailableIPv4Addresses() const;
 
   /**
-   * @brief Get recommended IP address (192.168.x.x preferred)
+   * @brief Get recommended IP address (RFC-1918 addresses preferred)
    * @return Recommended IP address, returns null if none available
    */
   QHostAddress getSuggestedIPv4Address() const;
@@ -82,7 +82,7 @@ private:
 
   QTimer *m_checkTimer;                ///< Timer for periodic network checks
   QList<QHostAddress> m_lastAddresses; ///< Last known IP addresses
-  bool m_isMonitoring;                 ///< Flag indicating if monitoring is active
+  bool m_isMonitoring = false;         ///< Flag indicating if monitoring is active
 };
 
 } // namespace deskflow::gui
