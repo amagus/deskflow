@@ -1,6 +1,6 @@
 /*
  * Deskflow -- mouse and keyboard sharing utility
- * SPDX-FileCopyrightText: (C) 2025 Chris Rizzitello <sithlord48@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2025 - 2026 Chris Rizzitello <sithlord48@gmail.com>
  * SPDX-FileCopyrightText: (C) 2024 - 2025 Symless Ltd.
  * SPDX-License-Identifier: GPL-2.0-only WITH LicenseRef-OpenSSL-Exception
  */
@@ -135,13 +135,15 @@ void CoreProcess::daemonIpcClientConnected()
   applyLogLevel();
 
   const auto logPath = requestDaemonLogPath();
-  if (!logPath.isEmpty()) {
-    if (m_daemonFileTail != nullptr) {
-      disconnect(m_daemonFileTail, &FileTail::newLine, this, &CoreProcess::handleLogLines);
-      m_daemonFileTail->deleteLater();
-    }
+  if (logPath.isEmpty()) {
+    qWarning() << "daemon no log path";
+    return;
+  }
 
-    qDebug() << "daemon log path:" << logPath;
+  qDebug() << "daemon log path:" << logPath;
+  if (m_daemonFileTail) {
+    m_daemonFileTail->setWatchedFile(logPath);
+  } else {
     m_daemonFileTail = new FileTail(logPath, this);
     connect(m_daemonFileTail, &FileTail::newLine, this, &CoreProcess::handleLogLines);
   }
@@ -530,9 +532,13 @@ QString CoreProcess::requestDaemonLogPath()
     return QString();
   }
 
-  if (QFileInfo logFile(logPath); !logFile.exists() || !logFile.isFile()) {
-    qWarning() << "daemon log path file does not exist:" << logPath;
-    return QString();
+  if (QFileInfo logFile(logPath); !logFile.isFile()) {
+    auto file = QFile(logPath);
+    if (!file.open(QFile::ReadWrite)) {
+      qCritical() << "daemon log path file can not be written:" << logPath;
+      return QString();
+    }
+    file.write(""); // Create an empty file
   }
 
   return logPath;
