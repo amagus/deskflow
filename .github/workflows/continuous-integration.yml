@@ -21,10 +21,17 @@ jobs:
   # Quality gate to allow PR merge, used in the branch protection rules.
   ci-passed:
     runs-on: ubuntu-latest
-    needs: [test-results, unix, flatpak]
+    needs: [main-build, test-results, unix, flatpak]
+    if: always()
 
     steps:
-      - run: echo "✅ CI passed" > $GITHUB_STEP_SUMMARY
+      - name: Check all steps passed
+        run: |
+          if [[ ${{needs.main-build.result}} == 'success' && ${{needs.test-results.result}} == 'success' && ${{needs.unix.result}} == 'success' && ${{needs.flatpak.result}} == 'success' ]]; then
+            echo "✅ CI passed" > $GITHUB_STEP_SUMMARY
+          else
+            exit 1
+          fi
 
   # Summary of test results, combined from test result artifacts.
   # Runs even if the tests fail to provide a summary of the failures.
@@ -32,7 +39,7 @@ jobs:
     needs: main-build
     if: always() && needs.main-build.result != 'skipped'
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 5
 
     steps:
@@ -54,7 +61,7 @@ jobs:
 
   lint-clang:
     needs: [lint-reuse]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 5
 
     steps:
@@ -277,6 +284,14 @@ jobs:
             cd ..
           fi
 
+      - name: Check for unexpected repo changes
+        shell: bash
+        run: |
+          if [[ `git status --porcelain` ]]; then
+            echo "Unexpected changes to the repo, Often caused by forgetting to commit the updated translation files"
+            exit 1
+          fi
+
       - name: Tests
         uses: ./.github/actions/run-tests
         timeout-minutes: 2
@@ -335,7 +350,7 @@ jobs:
     runs-on: ${{matrix.flatpak.runs-on}}
     timeout-minutes: 60
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.8
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
       options: --privileged
     strategy:
       fail-fast: false
