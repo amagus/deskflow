@@ -1055,7 +1055,7 @@ bool OSXScreen::onKey(CGEventRef event)
     // if the current set of modifiers exactly matches a modifiers-only
     // hot key then generate a hot key down event.
     if (!isLeftCmdKeyDown && m_activeModifierHotKey == 0) {
-      if (!m_modifierHotKeys.empty()) {
+      if (m_modifierHotKeys.count(newMask) > 0) {
         m_activeModifierHotKey = m_modifierHotKeys[newMask];
         m_activeModifierHotKeyMask = newMask;
         m_events->addEvent(
