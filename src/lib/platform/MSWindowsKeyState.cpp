@@ -739,6 +739,14 @@ void MSWindowsKeyState::sendKeyEvent(
 
 void MSWindowsKeyState::fakeKeyDown(KeyID id, KeyModifierMask mask, KeyButton button, const std::string &lang)
 {
+  // Win+L is a secure desktop shortcut handled by Winlogon and cannot be
+  // triggered via SendInput. Use the LockWorkStation() API instead.
+  if ((mask & KeyModifierSuper) != 0 && (id == 'L' || id == 'l')) {
+    LOG_DEBUG1("detected Super+L, calling LockWorkStation()");
+    LockWorkStation();
+    return;
+  }
+
   KeyState::fakeKeyDown(id, mask, button, lang);
 }
 
