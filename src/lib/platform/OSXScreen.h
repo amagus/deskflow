@@ -130,6 +130,10 @@ private:
   void showCursor();
   void hideCursor();
 
+  // hover event capture
+  void createHoverCaptureWindow();
+  void destroyHoverCaptureWindow();
+
   // map deskflow mouse button to mac buttons
   ButtonID mapDeskflowButtonToMac(uint16_t) const;
 
@@ -266,6 +270,10 @@ private:
   // window object that gets user input events when the server
   // does not have focus.
   WindowRef m_userInputWindow;
+
+  // invisible window to capture hover events at cursor position
+  // prevents hover actions from being triggered in user applications
+  void *m_hoverCaptureWindow;
 
   // fast user switching
   EventHandlerRef m_switchEventHandlerRef;

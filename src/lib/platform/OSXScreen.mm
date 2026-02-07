@@ -32,6 +32,10 @@
 #include "platform/OSXScreenSaver.h"
 
 #include <AppKit/NSEvent.h>
+#include <AppKit/NSWindow.h>
+#include <AppKit/NSRunningApplication.h>
+#include <AppKit/NSWorkspace.h>
+#include <AppKit/NSColor.h>
 #include <AvailabilityMacros.h>
 #include <IOKit/hidsystem/event_status_driver.h>
 #include <libproc.h>
@@ -103,7 +107,8 @@ OSXScreen::OSXScreen(IEventQueue *events, bool isPrimary, bool enableLangSync)
       m_lastSingleClickXCursor(0),
       m_lastSingleClickYCursor(0),
       m_events(events),
-      m_impl(nullptr)
+      m_impl(nullptr),
+      m_hoverCaptureWindow(nullptr)
 {
   m_displayID = CGMainDisplayID();
   if (!updateScreenShape(m_displayID, 0)) {
@@ -652,6 +657,56 @@ void OSXScreen::hideCursor()
   m_cursorHidden = true;
 }
 
+void OSXScreen::createHoverCaptureWindow()
+{
+  // Only create once
+  if (m_hoverCaptureWindow != nullptr) {
+    return;
+  }
+
+  // Use dispatch_async to create on the main queue, avoiding blocking
+  dispatch_async(dispatch_get_main_queue(), ^{
+    @try {
+      CGRect screenRect = CGDisplayBounds(m_displayID);
+      NSRect windowRect = NSMakeRect(m_xCenter - 50, screenRect.size.height - m_yCenter - 50, 100, 100);
+
+      NSWindow *window = [[NSWindow alloc]
+          initWithContentRect:windowRect
+          styleMask:NSWindowStyleMaskBorderless
+          backing:NSBackingStoreBuffered
+          defer:NO];
+
+      if (window) {
+        [window setBackgroundColor:[NSColor clearColor]];
+        [window setOpaque:NO];
+        [window setIgnoresMouseEvents:NO];
+        [window setCanHide:NO];
+        [window setLevel:kCGFloatingWindowLevel];
+        [window orderFrontRegardless];
+
+        m_hoverCaptureWindow = (void *)window;
+        LOG_DEBUG("created hover capture window at %d,%d", m_xCenter, m_yCenter);
+      }
+    } @catch (NSException *e) {
+      LOG_ERR("failed to create hover capture window: %s", [[e description] UTF8String]);
+    }
+  });
+}
+
+void OSXScreen::destroyHoverCaptureWindow()
+{
+  if (m_hoverCaptureWindow) {
+    NSWindow *windowToDestroy = (NSWindow *)m_hoverCaptureWindow;
+    m_hoverCaptureWindow = nullptr;
+
+    dispatch_sync(dispatch_get_main_queue(), ^{
+      [windowToDestroy close];
+      [windowToDestroy release];
+      LOG_DEBUG("destroyed hover capture window");
+    });
+  }
+}
+
 void OSXScreen::enable()
 {
   // watch the clipboard
@@ -698,6 +753,9 @@ void OSXScreen::enable()
 void OSXScreen::disable()
 {
   showCursor();
+
+  // Clean up hover capture window
+  destroyHoverCaptureWindow();
 
   // FIXME -- stop watching jump zones, stop capturing input
 
@@ -945,8 +1003,13 @@ bool OSXScreen::onMouseMove()
     // motion on primary screen
     sendEvent(EventTypes::PrimaryScreenMotionOnPrimary, MotionInfo::alloc(m_xCursor, m_yCursor));
   } else {
-    // motion on secondary screen.  warp mouse back to
-    // center.
+    // motion on secondary screen.  warp mouse back to center.
+    // Create hover capture window on first secondary screen motion
+    // At this point the service is fully initialized and ready
+    if (m_hoverCaptureWindow == nullptr) {
+      createHoverCaptureWindow();
+    }
+
     warpCursor(m_xCenter, m_yCenter);
 
     // examine the motion.  if it's about the distance
