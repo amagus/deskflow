@@ -50,3 +50,7 @@ CMakeFiles/*
 # other generated files
 compile_commands.json
 src/lib/Config.h
+
+# Ai helperfilers
+**/[cC]laude.[mM][dD]
+**/CLAUDE.[mM][dD]

@@ -82,19 +82,13 @@ static int xi_opcode;
 
 XWindowsScreen *XWindowsScreen::s_screen = nullptr;
 
-XWindowsScreen::XWindowsScreen(
-    const char *displayName, bool isPrimary, int mouseScrollDelta, IEventQueue *events, bool invertScrolling
-)
-    : PlatformScreen(events, invertScrolling),
+XWindowsScreen::XWindowsScreen(const char *displayName, bool isPrimary, IEventQueue *events)
+    : PlatformScreen(events),
       m_isPrimary(isPrimary),
-      m_mouseScrollDelta(mouseScrollDelta),
       m_isOnScreen(m_isPrimary),
       m_events(events)
 {
   assert(s_screen == nullptr);
-
-  if (mouseScrollDelta == 0)
-    m_mouseScrollDelta = 120;
   s_screen = this;
 
   if (XInitThreads() == 0) {
@@ -797,10 +791,10 @@ void XWindowsScreen::fakeMouseWheel(int32_t, int32_t yDelta) const
     return;
   }
 
-  yDelta = mapClientScrollDirection(yDelta);
+  yDelta = applyClientScrollModifier({0, yDelta}).yDelta;
 
   // choose button depending on rotation direction
-  const unsigned int xButton = mapButtonToX(static_cast<ButtonID>((yDelta >= 0) ? -1 : -2));
+  const unsigned int xButton = mapButtonToX(yDelta >= 0 ? kX11ScrollWheelUp : kX11ScrollWheelDown);
   if (xButton == 0) {
     // If we get here, then the XServer does not support the scroll
     // wheel buttons, so send PageUp/PageDown keystrokes instead.
@@ -823,12 +817,11 @@ void XWindowsScreen::fakeMouseWheel(int32_t, int32_t yDelta) const
     yDelta = -yDelta;
   }
 
-  if (yDelta < m_mouseScrollDelta) {
-    LOG_WARN("wheel scroll delta (%d) smaller than threshold (%d)", yDelta, m_mouseScrollDelta);
-  }
+  // Delta for a "click"
+  static const auto s_mouseDelta = 120;
 
   // send as many clicks as necessary
-  for (; yDelta >= m_mouseScrollDelta; yDelta -= m_mouseScrollDelta) {
+  for (; yDelta >= 0; yDelta -= s_mouseDelta) {
     XTestFakeButtonEvent(m_display, xButton, True, CurrentTime);
     XTestFakeButtonEvent(m_display, xButton, False, CurrentTime);
   }
@@ -1743,51 +1736,38 @@ KeyID XWindowsScreen::mapKeyFromX(XKeyEvent *event) const
 
 ButtonID XWindowsScreen::mapButtonFromX(const XButtonEvent *event) const
 {
-  unsigned int button = event->button;
-
-  // first three buttons map to 1, 2, 3 (kButtonLeft, Middle, Right)
-  if (button >= 1 && button <= 3) {
-    return static_cast<ButtonID>(button);
-  }
-
-  // buttons 4 and 5 are ignored here.  they're used for the wheel.
-  // buttons 6, 7, etc and up map to 4, 5, etc.
-  else if (button >= 6) {
-    return static_cast<ButtonID>(button - 2);
-  }
-
-  // unknown button
-  else {
+  switch (unsigned int button = event->button; button) {
+  case 1:
+  case 2:
+  case 3:
+    return static_cast<ButtonID>(button); // Handle Left, Middle and Right buttons
+  case 8:
+    return kButtonExtra0; // Mouse 4
+  case 9:
+    return kButtonExtra1; // Mouse 5
+  default:
     return kButtonNone;
   }
 }
 
 unsigned int XWindowsScreen::mapButtonToX(ButtonID id) const
 {
-  // map button -1 to button 4 (+wheel)
-  if (id == static_cast<ButtonID>(-1)) {
-    id = 4;
-  }
-
-  // map button -2 to button 5 (-wheel)
-  else if (id == static_cast<ButtonID>(-2)) {
-    id = 5;
-  }
-
-  // map buttons 4, 5, etc. to 6, 7, etc. to make room for buttons
-  // 4 and 5 used to simulate the mouse wheel.
-  else if (id >= 4) {
-    id += 2;
-  }
-
-  // check button is in legal range
-  if (id < 1 || id > m_buttons.size()) {
-    // out of range
+  switch (id) {
+  case kButtonLeft:
+  case kButtonRight:
+  case kButtonMiddle:
+    return static_cast<uint>(id);
+  case kX11ScrollWheelUp:
+    return 4;
+  case kX11ScrollWheelDown:
+    return 5;
+  case kButtonExtra0:
+    return 8;
+  case kButtonExtra1:
+    return 9;
+  default:
     return 0;
   }
-
-  // map button
-  return static_cast<unsigned int>(id);
 }
 
 void XWindowsScreen::warpCursorNoFlush(int32_t x, int32_t y)

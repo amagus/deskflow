@@ -74,8 +74,8 @@ void avoidHesitatingCursor();
 bool OSXScreen::s_testedForGHOM = false;
 bool OSXScreen::s_hasGHOM = false;
 
-OSXScreen::OSXScreen(IEventQueue *events, bool isPrimary, bool enableLangSync, bool invertScrolling)
-    : PlatformScreen(events, invertScrolling),
+OSXScreen::OSXScreen(IEventQueue *events, bool isPrimary, bool enableLangSync)
+    : PlatformScreen(events),
       m_isPrimary(isPrimary),
       m_isOnScreen(m_isPrimary),
       m_cursorPosValid(false),
@@ -587,11 +587,15 @@ void OSXScreen::fakeMouseRelativeMove(int32_t dx, int32_t dy) const
 void OSXScreen::fakeMouseWheel(int32_t xDelta, int32_t yDelta) const
 {
   if (xDelta != 0 || yDelta != 0) {
+    // use server's acceleration with a little boost since other platforms
+    // take one wheel step as a larger step than the mac does.
+    auto adjustedDeltas = applyClientScrollModifier(
+        {static_cast<int32_t>(3.0 * xDelta / 120.0), static_cast<int32_t>(3.0 * yDelta / 120.0)}
+    );
     // create a scroll event, post it and release it.  not sure if kCGScrollEventUnitLine
     // is the right choice here over kCGScrollEventUnitPixel
-    CGEventRef scrollEvent = CGEventCreateScrollWheelEvent(
-        nullptr, kCGScrollEventUnitLine, 2, mapScrollWheelFromDeskflow(yDelta), mapScrollWheelFromDeskflow(xDelta)
-    );
+    CGEventRef scrollEvent =
+        CGEventCreateScrollWheelEvent(nullptr, kCGScrollEventUnitLine, 2, adjustedDeltas.yDelta, adjustedDeltas.xDelta);
 
     // Fix for sticky keys
     CGEventFlags modifiers = m_keyState->getModifierStateAsOSXFlags();
@@ -1196,9 +1200,13 @@ ButtonID OSXScreen::mapDeskflowButtonToMac(uint16_t button) const
     return kMacButtonMiddle;
   case 3:
     return kMacButtonRight;
+  case 4:
+    return kButtonExtra0;
+  case 5:
+    return kButtonExtra1;
+  default:
+    return kButtonNone;
   }
-
-  return static_cast<ButtonID>(button);
 }
 
 ButtonID OSXScreen::mapMacButtonToDeskflow(uint16_t macButton) const
@@ -1206,15 +1214,17 @@ ButtonID OSXScreen::mapMacButtonToDeskflow(uint16_t macButton) const
   switch (macButton) {
   case 1:
     return kButtonLeft;
-
   case 2:
     return kButtonRight;
-
   case 3:
     return kButtonMiddle;
+  case 4:
+    return kButtonExtra0;
+  case 5:
+    return kButtonExtra1;
+  default:
+    return kButtonNone;
   }
-
-  return static_cast<ButtonID>(macButton);
 }
 
 int32_t OSXScreen::mapScrollWheelToDeskflow(int32_t x) const
@@ -1222,14 +1232,6 @@ int32_t OSXScreen::mapScrollWheelToDeskflow(int32_t x) const
   // return accelerated scrolling
   double d = (1.0 + getScrollSpeed()) * x;
   return static_cast<int32_t>(120.0 * d);
-}
-
-int32_t OSXScreen::mapScrollWheelFromDeskflow(int32_t x) const
-{
-  // use server's acceleration with a little boost since other platforms
-  // take one wheel step as a larger step than the mac does.
-  auto result = static_cast<int32_t>(3.0 * x / 120.0);
-  return mapClientScrollDirection(result);
 }
 
 double OSXScreen::getScrollSpeed() const
@@ -1504,8 +1506,8 @@ extern "C" {
 
 typedef int CGSConnection;
 typedef enum {
-	CGSGlobalHotKeyEnable = 0,
-	CGSGlobalHotKeyDisable = 1,
+  CGSGlobalHotKeyEnable = 0,
+  CGSGlobalHotKeyDisable = 1,
 } CGSGlobalHotKeyOperatingMode;
 
 extern CGSConnection _CGSDefaultConnection(void) WEAK_IMPORT_ATTRIBUTE;
@@ -1530,51 +1532,48 @@ static CGSSetGlobalHotKeyOperatingMode_t	s_CGSSetGlobalHotKeyOperatingMode;
     s_##name_ = (name_##_t)NSAddressOfSymbol(NSLookupAndBindSymbolWithHint("_" #name_, "CoreGraphics"));               \
   }
 
-bool
-OSXScreen::isGlobalHotKeyOperatingModeAvailable()
+bool OSXScreen::isGlobalHotKeyOperatingModeAvailable()
 {
-	if (!s_testedForGHOM) {
-		s_testedForGHOM = true;
-		LOOKUP(_CGSDefaultConnection);
-		LOOKUP(CGSGetGlobalHotKeyOperatingMode);
-		LOOKUP(CGSSetGlobalHotKeyOperatingMode);
-		s_hasGHOM = (s__CGSDefaultConnection != nullptr &&
-					s_CGSGetGlobalHotKeyOperatingMode != nullptr &&
-					s_CGSSetGlobalHotKeyOperatingMode != nullptr);
-	}
-	return s_hasGHOM;
+  if (!s_testedForGHOM) {
+    s_testedForGHOM = true;
+    LOOKUP(_CGSDefaultConnection);
+    LOOKUP(CGSGetGlobalHotKeyOperatingMode);
+    LOOKUP(CGSSetGlobalHotKeyOperatingMode);
+    s_hasGHOM = (s__CGSDefaultConnection != nullptr &&
+                 s_CGSGetGlobalHotKeyOperatingMode != nullptr &&
+                 s_CGSSetGlobalHotKeyOperatingMode != nullptr);
+  }
+  return s_hasGHOM;
 }
 
-void
-OSXScreen::setGlobalHotKeysEnabled(bool enabled)
+void OSXScreen::setGlobalHotKeysEnabled(bool enabled)
 {
-	if (isGlobalHotKeyOperatingModeAvailable()) {
-		CGSConnection conn = s__CGSDefaultConnection();
+  if (isGlobalHotKeyOperatingModeAvailable()) {
+    CGSConnection conn = s__CGSDefaultConnection();
 
-		CGSGlobalHotKeyOperatingMode mode;
-		s_CGSGetGlobalHotKeyOperatingMode(conn, &mode);
+    CGSGlobalHotKeyOperatingMode mode;
+    s_CGSGetGlobalHotKeyOperatingMode(conn, &mode);
 
-		if (enabled && mode == CGSGlobalHotKeyDisable) {
-			s_CGSSetGlobalHotKeyOperatingMode(conn, CGSGlobalHotKeyEnable);
-		}
-		else if (!enabled && mode == CGSGlobalHotKeyEnable) {
-			s_CGSSetGlobalHotKeyOperatingMode(conn, CGSGlobalHotKeyDisable);
-		}
-	}
+    if (enabled && mode == CGSGlobalHotKeyDisable) {
+      s_CGSSetGlobalHotKeyOperatingMode(conn, CGSGlobalHotKeyEnable);
+    }
+    else if (!enabled && mode == CGSGlobalHotKeyEnable) {
+      s_CGSSetGlobalHotKeyOperatingMode(conn, CGSGlobalHotKeyDisable);
+    }
+  }
 }
 
-bool
-OSXScreen::getGlobalHotKeysEnabled()
+bool OSXScreen::getGlobalHotKeysEnabled()
 {
-	CGSGlobalHotKeyOperatingMode mode;
-	if (isGlobalHotKeyOperatingModeAvailable()) {
-		CGSConnection conn = s__CGSDefaultConnection();
-		s_CGSGetGlobalHotKeyOperatingMode(conn, &mode);
-	}
-	else {
-		mode = CGSGlobalHotKeyEnable;
-	}
-	return (mode == CGSGlobalHotKeyEnable);
+  CGSGlobalHotKeyOperatingMode mode;
+  if (isGlobalHotKeyOperatingModeAvailable()) {
+    CGSConnection conn = s__CGSDefaultConnection();
+    s_CGSGetGlobalHotKeyOperatingMode(conn, &mode);
+  }
+  else {
+    mode = CGSGlobalHotKeyEnable;
+  }
+  return (mode == CGSGlobalHotKeyEnable);
 }
 
 #endif

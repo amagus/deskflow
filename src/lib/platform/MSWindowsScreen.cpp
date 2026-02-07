@@ -79,10 +79,8 @@
 HINSTANCE MSWindowsScreen::s_windowInstance = nullptr;
 MSWindowsScreen *MSWindowsScreen::s_screen = nullptr;
 
-MSWindowsScreen::MSWindowsScreen(
-    bool isPrimary, bool useHooks, IEventQueue *events, bool enableLangSync, bool invertScrolling
-)
-    : PlatformScreen(events, invertScrolling),
+MSWindowsScreen::MSWindowsScreen(bool isPrimary, bool useHooks, IEventQueue *events, bool enableLangSync)
+    : PlatformScreen(events),
       m_isPrimary(isPrimary),
       m_useHooks(useHooks),
       m_isOnScreen(m_isPrimary),
@@ -710,9 +708,8 @@ void MSWindowsScreen::fakeMouseRelativeMove(int32_t dx, int32_t dy) const
 
 void MSWindowsScreen::fakeMouseWheel(int32_t xDelta, int32_t yDelta) const
 {
-  xDelta = mapClientScrollDirection(xDelta);
-  yDelta = mapClientScrollDirection(yDelta);
-  m_desks->fakeMouseWheel(xDelta, yDelta);
+  auto adjustedDeltas = applyClientScrollModifier({xDelta, yDelta});
+  m_desks->fakeMouseWheel(adjustedDeltas.xDelta, adjustedDeltas.yDelta);
 }
 
 void MSWindowsScreen::updateKeys()
@@ -1506,13 +1503,13 @@ ButtonID MSWindowsScreen::mapButtonFromEvent(WPARAM msg, LPARAM button) const
     switch (button) {
     case XBUTTON1:
       if (GetSystemMetrics(SM_CMOUSEBUTTONS) >= 4) {
-        return kButtonExtra0 + 0;
+        return kButtonExtra0;
       }
       break;
 
     case XBUTTON2:
       if (GetSystemMetrics(SM_CMOUSEBUTTONS) >= 5) {
-        return kButtonExtra0 + 1;
+        return kButtonExtra1;
       }
       break;
     }

@@ -34,7 +34,7 @@ using ClipboardInfo = IScreen::ClipboardInfo;
 class EiScreen : public PlatformScreen
 {
 public:
-  EiScreen(bool isPrimary, IEventQueue *events, bool usePortal, bool invertScrolling = false);
+  EiScreen(bool isPrimary, IEventQueue *events, bool usePortal);
   ~EiScreen() override;
 
   // IScreen overrides
@@ -121,6 +121,8 @@ private:
 
   // keyboard stuff
   EiKeyState *m_keyState = nullptr;
+
+  KeyID m_lastPressed = kKeyNone;
 
   // clipboard stuff
   WlClipboardCollection *m_clipboard = nullptr;

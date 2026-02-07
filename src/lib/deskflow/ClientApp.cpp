@@ -104,12 +104,11 @@ const char *ClientApp::daemonName() const
 
 deskflow::Screen *ClientApp::createScreen()
 {
-  const bool invertScrolling = Settings::value(Settings::Client::InvertScrollDirection).toBool();
 #if WINAPI_MSWINDOWS
   return new deskflow::Screen(
       new MSWindowsScreen(
           false, Settings::value(Settings::Core::UseHooks).toBool(), getEvents(),
-          Settings::value(Settings::Client::LanguageSync).toBool(), invertScrolling
+          Settings::value(Settings::Client::LanguageSync).toBool()
       ),
       getEvents()
   );
@@ -119,7 +118,7 @@ deskflow::Screen *ClientApp::createScreen()
   if (deskflow::platform::isWayland()) {
 #if WINAPI_LIBEI
     LOG_INFO("using ei screen for wayland");
-    return new deskflow::Screen(new deskflow::EiScreen(false, getEvents(), true, invertScrolling), getEvents());
+    return new deskflow::Screen(new deskflow::EiScreen(false, getEvents(), true), getEvents());
 #else
     throw XNoEiSupport();
 #endif
@@ -129,10 +128,7 @@ deskflow::Screen *ClientApp::createScreen()
 #if WINAPI_XWINDOWS
   LOG_INFO("using legacy x windows screen");
   return new deskflow::Screen(
-      new XWindowsScreen(
-          qPrintable(Settings::value(Settings::Core::Display).toString()), false,
-          Settings::value(Settings::Client::ScrollSpeed).toInt(), getEvents(), invertScrolling
-      ),
+      new XWindowsScreen(qPrintable(Settings::value(Settings::Core::Display).toString()), false, getEvents()),
       getEvents()
   );
 
@@ -140,8 +136,7 @@ deskflow::Screen *ClientApp::createScreen()
 
 #if WINAPI_CARBON
   return new deskflow::Screen(
-      new OSXScreen(getEvents(), false, Settings::value(Settings::Client::LanguageSync).toBool(), invertScrolling),
-      getEvents()
+      new OSXScreen(getEvents(), false, Settings::value(Settings::Client::LanguageSync).toBool()), getEvents()
   );
 #endif
 }
@@ -287,7 +282,8 @@ bool ClientApp::startClient()
     if (m_clientScreen == nullptr) {
       clientScreen = openClientScreen();
       m_client = openClient(
-          Settings::value(Settings::Core::ScreenName).toString().toStdString(), getCurrentServerAddress(), clientScreen
+          Settings::value(Settings::Core::ComputerName).toString().toStdString(), getCurrentServerAddress(),
+          clientScreen
       );
       m_clientScreen = clientScreen;
       LOG_NOTE("started client");
