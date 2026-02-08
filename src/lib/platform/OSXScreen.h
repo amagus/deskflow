@@ -132,7 +132,8 @@ private:
   void hideCursor();
 
   // hover event capture
-  void createHoverCaptureWindow();
+  void showHoverCaptureWindow();
+  void hideHoverCaptureWindow();
   void destroyHoverCaptureWindow();
 
   // map deskflow mouse button to mac buttons
@@ -279,6 +280,7 @@ private:
   // invisible window to capture hover events at cursor position
   // prevents hover actions from being triggered in user applications
   void *m_hoverCaptureWindow;
+  bool m_hoverCaptureWindowHidden;
 
   // fast user switching
   EventHandlerRef m_switchEventHandlerRef;
