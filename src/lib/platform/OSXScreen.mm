@@ -108,7 +108,8 @@ OSXScreen::OSXScreen(IEventQueue *events, bool isPrimary, bool enableLangSync)
       m_lastSingleClickYCursor(0),
       m_events(events),
       m_impl(nullptr),
-      m_hoverCaptureWindow(nullptr)
+      m_hoverCaptureWindow(nullptr),
+      m_hoverCaptureWindowHidden(true)
 {
   m_displayID = CGMainDisplayID();
   if (!updateScreenShape(m_displayID, 0)) {
@@ -657,38 +658,52 @@ void OSXScreen::hideCursor()
   m_cursorHidden = true;
 }
 
-void OSXScreen::createHoverCaptureWindow()
+void OSXScreen::showHoverCaptureWindow()
 {
-  // Only create once
-  if (m_hoverCaptureWindow != nullptr) {
-    return;
-  }
-
-  // Use dispatch_async to create on the main queue, avoiding blocking
+  // hover capture window is not essential, just schedule it to appear, don't block other processing
   dispatch_async(dispatch_get_main_queue(), ^{
     @try {
-      CGRect screenRect = CGDisplayBounds(m_displayID);
-      NSRect windowRect = NSMakeRect(m_xCenter - 50, screenRect.size.height - m_yCenter - 50, 100, 100);
+      NSWindow *window = (NSWindow *)m_hoverCaptureWindow;
+      if (!window) {
+        CGRect screenRect = CGDisplayBounds(m_displayID);
+        NSRect windowRect = NSMakeRect(m_xCenter - 50, screenRect.size.height - m_yCenter - 50, 100, 100);
 
-      NSWindow *window = [[NSWindow alloc]
+        window = [[NSWindow alloc]
           initWithContentRect:windowRect
           styleMask:NSWindowStyleMaskBorderless
           backing:NSBackingStoreBuffered
           defer:NO];
 
-      if (window) {
-        [window setBackgroundColor:[NSColor clearColor]];
-        [window setOpaque:NO];
-        [window setIgnoresMouseEvents:NO];
-        [window setCanHide:NO];
-        [window setLevel:kCGFloatingWindowLevel];
+        if (window) {
+          [window setBackgroundColor:[NSColor clearColor]];
+          [window setOpaque:NO];
+          [window setIgnoresMouseEvents:NO];
+          [window setCanHide:YES];
+          [window setLevel:kCGFloatingWindowLevel];
+          m_hoverCaptureWindow = (void *)window;
+          LOG_DEBUG("created hover capture window at %d,%d", m_xCenter, m_yCenter);
+        }
+      }
+      if (m_hoverCaptureWindowHidden && window) {
         [window orderFrontRegardless];
-
-        m_hoverCaptureWindow = (void *)window;
-        LOG_DEBUG("created hover capture window at %d,%d", m_xCenter, m_yCenter);
+        m_hoverCaptureWindowHidden = false;
       }
     } @catch (NSException *e) {
-      LOG_ERR("failed to create hover capture window: %s", [[e description] UTF8String]);
+      LOG_ERR("failed to show hover capture window: %s", [[e description] UTF8String]);
+    }
+  });
+}
+
+void OSXScreen::hideHoverCaptureWindow()
+{
+  // hover capture window is not essential, just schedule it to hide, don't block other processing
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (!m_hoverCaptureWindowHidden && m_hoverCaptureWindow) {
+      NSWindow *window = (NSWindow *)m_hoverCaptureWindow;
+      [window orderOut:nil];
+      m_hoverCaptureWindowHidden = true;
+      LOG_DEBUG("hid hover capture window");
+
     }
   });
 }
@@ -699,9 +714,8 @@ void OSXScreen::destroyHoverCaptureWindow()
     NSWindow *windowToDestroy = (NSWindow *)m_hoverCaptureWindow;
     m_hoverCaptureWindow = nullptr;
 
-    dispatch_sync(dispatch_get_main_queue(), ^{
+    dispatch_async(dispatch_get_main_queue(), ^{
       [windowToDestroy close];
-      [windowToDestroy release];
       LOG_DEBUG("destroyed hover capture window");
     });
   }
@@ -785,6 +799,10 @@ void OSXScreen::disable()
 void OSXScreen::enter()
 {
   m_isOnScreen = true;
+
+  // Hide hover capture window instead of destroying it
+  hideHoverCaptureWindow();
+
   showCursor();
 
   if (m_isPrimary) {
@@ -1004,11 +1022,10 @@ bool OSXScreen::onMouseMove()
     sendEvent(EventTypes::PrimaryScreenMotionOnPrimary, MotionInfo::alloc(m_xCursor, m_yCursor));
   } else {
     // motion on secondary screen.  warp mouse back to center.
+
     // Create hover capture window on first secondary screen motion
-    // At this point the service is fully initialized and ready
-    if (m_hoverCaptureWindow == nullptr) {
-      createHoverCaptureWindow();
-    }
+    // This prevents other apps from starting mouse hover actions
+    showHoverCaptureWindow();
 
     warpCursor(m_xCenter, m_yCenter);
 
