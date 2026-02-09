@@ -24,6 +24,12 @@
 #include <thread>
 #include <vector>
 
+#ifdef __OBJC__
+@class NSWindow;
+#else
+class NSWindow;
+#endif
+
 extern "C"
 {
   using CGSConnectionID = int;
@@ -131,10 +137,9 @@ private:
   void showCursor();
   void hideCursor();
 
-  // hover event capture
-  void showHoverCaptureWindow();
-  void hideHoverCaptureWindow();
-  void destroyHoverCaptureWindow();
+  void showPreventHoverWindow();
+  void hidePreventHoverWindow();
+  void destroyPreventHoverWindow();
 
   // map deskflow mouse button to mac buttons
   ButtonID mapDeskflowButtonToMac(uint16_t) const;
@@ -316,6 +321,17 @@ private:
   int m_clickState;
   int32_t m_lastSingleClickXCursor;
   int32_t m_lastSingleClickYCursor;
+
+  enum class EPreventHoverWindowState
+  {
+    Hidden = 0,
+    JustShown,
+    WaitingForWarp,
+    Displayed
+  };
+
+  NSWindow *m_pPreventHoverWindow = nullptr;
+  EPreventHoverWindowState m_preventHoverWindowState = EPreventHoverWindowState::Hidden;
 
   IEventQueue *m_events;
 
