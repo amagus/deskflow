@@ -11,9 +11,9 @@ cmake_policy(SET CMP0003 NEW)
 # Fix define escaping
 cmake_policy(SET CMP0005 NEW)
 
-if(APPLE)
-# avoids duplicate libraries in dependencies in macOS builds (avoids warnings)
-cmake_policy(SET CMP0156 NEW)
+# De-duplicate libraries on linker calls
+if(POLICY CMP0156)
+  cmake_policy(SET CMP0156 NEW)
 endif()
 
 # Set CXX Requirements
