@@ -1106,10 +1106,8 @@ void Server::processOptions()
     } else if (id == kOptionClipboardSharingSize) {
       if (value <= 0) {
         m_maximumClipboardSize = 0;
-        LOG_NOTE(
-            "clipboard sharing is disabled because the "
-            "maximum shared clipboard size is set to 0"
-        );
+        LOG_NOTE("clipboard sharing is disabled because the "
+                 "maximum shared clipboard size is set to 0");
       } else {
         m_maximumClipboardSize = static_cast<size_t>(value);
       }
@@ -1219,13 +1217,13 @@ void Server::handleKeyDownEvent(const Event &event)
 {
   const auto *info = static_cast<IPlatformScreen::KeyInfo *>(event.getData());
   auto lang = AppUtil::instance().getCurrentLanguageCode();
-  onKeyDown(info->m_key, info->m_mask, info->m_button, lang, info->m_screens);
+  onKeyDown(info->m_key, info->m_mask, info->m_button, lang, info->m_screens.c_str());
 }
 
 void Server::handleKeyUpEvent(const Event &event)
 {
   auto *info = static_cast<IPlatformScreen::KeyInfo *>(event.getData());
-  onKeyUp(info->m_key, info->m_mask, info->m_button, info->m_screens);
+  onKeyUp(info->m_key, info->m_mask, info->m_button, info->m_screens.c_str());
 }
 
 void Server::handleKeyRepeatEvent(const Event &event)
