@@ -828,7 +828,7 @@ void OSXKeyState::handleModifierKeys(CGEventRef event, void *target, KeyModifier
     const bool down = (newMask & KeyModifierAlt) != 0;
     uint32_t privateModifiers = CGEventGetIntegerValueField(event, kCGKeyboardEventPrivateModifierFlags);
     const bool isLeft = ((privateModifiers & kCgKeyboardIsLeftOption) != 0);
-    
+
     // inverted on purpose : left alt/option to behave as right, and right as left
     const KeyID keyId = isLeft ? kKeyAlt_R : kKeyAlt_L;
 
