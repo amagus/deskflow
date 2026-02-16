@@ -24,7 +24,8 @@ constexpr uint32_t kCgKeyboardIsLeftOption = 0x20;
 constexpr uint32_t kCgKeyboardIsRightCmd = 0x10;
 constexpr uint32_t kCgKeyboardIsLeftCmd = 0x8;
 constexpr uint32_t kCgKeyboardIsLeftModKey = kCgKeyboardIsLeftControl | kCgKeyboardIsLeftOption | kCgKeyboardIsLeftCmd;
-constexpr uint32_t kCgKeyboardIsRightModKey = kCgKeyboardIsRightControl | kCgKeyboardIsRightOption | kCgKeyboardIsRightCmd;
+constexpr uint32_t kCgKeyboardIsRightModKey =
+    kCgKeyboardIsRightControl | kCgKeyboardIsRightOption | kCgKeyboardIsRightCmd;
 
 class IOSXKeyResource;
 
