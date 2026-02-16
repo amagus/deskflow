@@ -124,8 +124,8 @@ private:
   void updateSecurityIcon(bool visible);
   void updateNetworkInfo();
 
-  void coreModeToggled();
-  void updateModeControls(bool serverMode);
+  void coreModeToggled(bool checked);
+  void updateModeControls();
   void updateModeControlLabels();
   std::unique_ptr<Ui::MainWindow> ui;
 
@@ -145,6 +145,7 @@ private:
   void updateScreenName();
   void saveSettings() const;
   void showConfigureServer(const QString &message);
+  void showConfigureClient();
   void restoreWindow();
   void setupControls();
   void showFirstConnectedMessage();
