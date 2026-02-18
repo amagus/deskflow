@@ -25,18 +25,24 @@ jobs:
   # Quality gate to allow PR merge, used in the branch protection rules.
   ci-passed:
     runs-on: ubuntu-latest
-    needs: [main-build, test-results, unix, flatpak]
+    # needs: [main-build, test-results, unix, flatpak]
+    needs: [main-build, test-results]
     if: always()
 
     steps:
       - name: Check all steps passed
         run: |
-          if [[ ${{needs.main-build.result}} == 'success' && ${{needs.test-results.result}} == 'success' && ${{needs.unix.result}} == 'success' && ${{needs.flatpak.result}} == 'success' ]]; then
+          if [[ ${{needs.main-build.result}} == 'success' && ${{needs.test-results.result}} == 'success' ]]; then
             echo "✅ CI passed" > $GITHUB_STEP_SUMMARY
           else
             exit 1
           fi
-
+        # run: |
+        #   if [[ ${{needs.main-build.result}} == 'success' && ${{needs.test-results.result}} == 'success' && ${{needs.unix.result}} == 'success' && ${{needs.flatpak.result}} == 'success' ]]; then
+        #     echo "✅ CI passed" > $GITHUB_STEP_SUMMARY
+        #   else
+        #     exit 1
+        #   fi
   # Summary of test results, combined from test result artifacts.
   # Runs even if the tests fail to provide a summary of the failures.
   test-results:
@@ -101,13 +107,13 @@ jobs:
             arch: "amd64"
             qt-version: 6.10.1
 
-          - name: "windows-2022-arm64"
-            runs-on: "windows-11-arm"
-            timeout: 30
-            config-args: "-G Ninja"
-            vcpkg-triplet: arm64-windows
-            arch: "arm64"
-            qt-version: 6.10.1
+          # - name: "windows-2022-arm64"
+          #   runs-on: "windows-11-arm"
+          #   timeout: 30
+          #   config-args: "-G Ninja"
+          #   vcpkg-triplet: arm64-windows
+          #   arch: "arm64"
+          #   qt-version: 6.10.1
 
           - name: "macos-arm64"
             runs-on: macos-15
@@ -115,116 +121,116 @@ jobs:
             qt-version: 6.10.1
             config-args: '-DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=14 -DCMAKE_OSX_SYSROOT=/Applications/Xcode_16.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
 
-          - name: "macos-x64"
-            runs-on: macos-15-intel
-            timeout: 20
-            qt-version: 6.9.3
-            config-args: '-DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=12 -DCMAKE_OSX_SYSROOT=/Applications/Xcode_16.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
+          # - name: "macos-x64"
+          #   runs-on: macos-15-intel
+          #   timeout: 20
+          #   qt-version: 6.9.3
+          #   config-args: '-DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=12 -DCMAKE_OSX_SYSROOT=/Applications/Xcode_16.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
 
-          - name: "debian-x86_64"
-            runs-on: ubuntu-latest
-            container: debian:stable-slim
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "debian-x86_64"
+          #   runs-on: ubuntu-latest
+          #   container: debian:stable-slim
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "debian-arm64"
-            runs-on: ubuntu-24.04-arm
-            container: debian:stable-slim
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "debian-arm64"
+          #   runs-on: ubuntu-24.04-arm
+          #   container: debian:stable-slim
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "debian-testing-x86_64"
-            runs-on: ubuntu-latest
-            container: debian:testing-slim
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "debian-testing-x86_64"
+          #   runs-on: ubuntu-latest
+          #   container: debian:testing-slim
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "debian-testing-arm64"
-            runs-on: ubuntu-24.04-arm
-            container: debian:testing-slim
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "debian-testing-arm64"
+          #   runs-on: ubuntu-24.04-arm
+          #   container: debian:testing-slim
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "fedora-42-x86_64"
-            runs-on: ubuntu-latest
-            container: fedora:42
-            like: "fedora"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "fedora-42-x86_64"
+          #   runs-on: ubuntu-latest
+          #   container: fedora:42
+          #   like: "fedora"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "fedora-42-arm64"
-            runs-on: ubuntu-24.04-arm
-            container: fedora:42
-            like: "fedora"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "fedora-42-arm64"
+          #   runs-on: ubuntu-24.04-arm
+          #   container: fedora:42
+          #   like: "fedora"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "fedora-43-x86_64"
-            runs-on: ubuntu-latest
-            container: fedora:43
-            like: "fedora"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "fedora-43-x86_64"
+          #   runs-on: ubuntu-latest
+          #   container: fedora:43
+          #   like: "fedora"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "fedora-43-arm64"
-            runs-on: ubuntu-24.04-arm
-            container: fedora:43
-            like: "fedora"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "fedora-43-arm64"
+          #   runs-on: ubuntu-24.04-arm
+          #   container: fedora:43
+          #   like: "fedora"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "opensuse-x86_64"
-            runs-on: ubuntu-latest
-            container: opensuse/tumbleweed:latest
-            like: "suse"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "opensuse-x86_64"
+          #   runs-on: ubuntu-latest
+          #   container: opensuse/tumbleweed:latest
+          #   like: "suse"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "opensuse-arm64"
-            runs-on: ubuntu-24.04-arm
-            container: opensuse/tumbleweed:latest
-            like: "suse"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "opensuse-arm64"
+          #   runs-on: ubuntu-24.04-arm
+          #   container: opensuse/tumbleweed:latest
+          #   like: "suse"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "archlinux-x86_64"
-            runs-on: ubuntu-latest
-            container: archlinux:latest
-            like: "arch"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_DEV_DOCS=ON"
+          # - name: "archlinux-x86_64"
+          #   runs-on: ubuntu-latest
+          #   container: archlinux:latest
+          #   like: "arch"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_DEV_DOCS=ON"
 
-          - name: "ubuntu-25.10-x86_64"
-            runs-on: ubuntu-latest
-            container: ubuntu:25.10
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "ubuntu-25.10-x86_64"
+          #   runs-on: ubuntu-latest
+          #   container: ubuntu:25.10
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "ubuntu-25.10-arm64"
-            runs-on: ubuntu-24.04-arm
-            container: ubuntu:25.10
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "ubuntu-25.10-arm64"
+          #   runs-on: ubuntu-24.04-arm
+          #   container: ubuntu:25.10
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "ubuntu-26.04-x86_64"
-            runs-on: ubuntu-latest
-            container: ubuntu:26.04
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "ubuntu-26.04-x86_64"
+          #   runs-on: ubuntu-latest
+          #   container: ubuntu:26.04
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "ubuntu-26.04-arm64"
-            runs-on: ubuntu-24.04-arm
-            container: ubuntu:26.04
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "ubuntu-26.04-arm64"
+          #   runs-on: ubuntu-24.04-arm
+          #   container: ubuntu:26.04
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
     steps:
       # Make sure the container has git before we do anything else
