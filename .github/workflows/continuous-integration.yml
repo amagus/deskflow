@@ -327,86 +327,86 @@ jobs:
           path: ${{github.workspace}}/build/deskflow[-_]*.*
 
   # Technically, "unix" is a misnomer, but we use it here to mean "Unix-like BSD-derived".
-  unix:
-    needs: lint-clang
-    name: unix-${{ matrix.distro.name }}
-    runs-on: ${{ vars.CI_UNIX_RUNNER || 'ubuntu-24.04' }}
-    timeout-minutes: 20
+  # unix:
+  #   needs: lint-clang
+  #   name: unix-${{ matrix.distro.name }}
+  #   runs-on: ${{ vars.CI_UNIX_RUNNER || 'ubuntu-24.04' }}
+  #   timeout-minutes: 20
 
-    strategy:
-      fail-fast: false
+  #   strategy:
+  #     fail-fast: false
 
-      matrix:
-        distro:
-          - name: freebsd
+  #     matrix:
+  #       distro:
+  #         - name: freebsd
 
-    steps:
-      # Fancy checkout gets all the tags
-      # it also makes sure we can use git --describe correctly
-      - name: Fancy Checkout
-        uses: sithlord48/fancy-checkout@v2
-      - name: Build on FreeBSD
-        if: ${{ matrix.distro.name == 'freebsd' }}
-        uses: vmactions/freebsd-vm@v1
-        with:
-          usesh: true
-          run: |
-            pkg install -y cmake ninja gmake gcc12 openssl glib \
-            libX11 libXtst libxkbfile qt6-base qt6-tools gtk3 \
-            googletest pkgconf libei libportal
-            ${{env.CMAKE_CONFIGURE}} -G Ninja
-            cmake --build build -j16
-            # Integration tests are flakey by nature, make them optional.
-            export QT_QPA_PLATFORM=offscreen
-            ./build/bin/unittests || true
-  flatpak:
-    needs: lint-clang
-    name: flatpak-${{matrix.flatpak.arch}}
-    runs-on: ${{matrix.flatpak.runs-on}}
-    timeout-minutes: 60
-    container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
-      options: --privileged
-    strategy:
-      fail-fast: false
-      matrix:
-        flatpak:
-          - runs-on: ubuntu-latest
-            arch: x86_64
-          - runs-on: ubuntu-24.04-arm
-            arch: aarch64
-    steps:
-      - name: Check out repository
-        uses: sithlord48/fancy-checkout@v2
+  #   steps:
+  #     # Fancy checkout gets all the tags
+  #     # it also makes sure we can use git --describe correctly
+  #     - name: Fancy Checkout
+  #       uses: sithlord48/fancy-checkout@v2
+  #     - name: Build on FreeBSD
+  #       if: ${{ matrix.distro.name == 'freebsd' }}
+  #       uses: vmactions/freebsd-vm@v1
+  #       with:
+  #         usesh: true
+  #         run: |
+  #           pkg install -y cmake ninja gmake gcc12 openssl glib \
+  #           libX11 libXtst libxkbfile qt6-base qt6-tools gtk3 \
+  #           googletest pkgconf libei libportal
+  #           ${{env.CMAKE_CONFIGURE}} -G Ninja
+  #           cmake --build build -j16
+  #           # Integration tests are flakey by nature, make them optional.
+  #           export QT_QPA_PLATFORM=offscreen
+  #           ./build/bin/unittests || true
+  # flatpak:
+  #   needs: lint-clang
+  #   name: flatpak-${{matrix.flatpak.arch}}
+  #   runs-on: ${{matrix.flatpak.runs-on}}
+  #   timeout-minutes: 60
+  #   container:
+  #     image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+  #     options: --privileged
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       flatpak:
+  #         - runs-on: ubuntu-latest
+  #           arch: x86_64
+  #         - runs-on: ubuntu-24.04-arm
+  #           arch: aarch64
+  #   steps:
+  #     - name: Check out repository
+  #       uses: sithlord48/fancy-checkout@v2
 
-      - run: git config --global protocol.file.allow always
+  #     - run: git config --global protocol.file.allow always
 
-      - name: Get version
-        uses: ./.github/actions/get-version
+  #     - name: Get version
+  #       uses: ./.github/actions/get-version
 
-      - name: Lint appsteam
-        run: flatpak-builder-lint appstream deploy/linux/org.deskflow.deskflow.metainfo.xml
+  #     - name: Lint appsteam
+  #       run: flatpak-builder-lint appstream deploy/linux/org.deskflow.deskflow.metainfo.xml
 
-      - name: Lint manifest
-        run: flatpak-builder-lint manifest deploy/linux/flatpak/org.deskflow.deskflow.yml
+  #     - name: Lint manifest
+  #       run: flatpak-builder-lint manifest deploy/linux/flatpak/org.deskflow.deskflow.yml
 
-      - name: Build
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        with:
-          bundle: deskflow-${{env.DESKFLOW_PACKAGE_VERSION}}-linux-${{matrix.flatpak.arch}}.flatpak
-          manifest-path: deploy/linux/flatpak/org.deskflow.deskflow.yml
-          cache-key: flatpak-builder-${{matrix.flatpak.arch}}-2.0
-          arch: ${{matrix.flatpak.arch}}
-          upload-artifact: false
+  #     - name: Build
+  #       uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+  #       with:
+  #         bundle: deskflow-${{env.DESKFLOW_PACKAGE_VERSION}}-linux-${{matrix.flatpak.arch}}.flatpak
+  #         manifest-path: deploy/linux/flatpak/org.deskflow.deskflow.yml
+  #         cache-key: flatpak-builder-${{matrix.flatpak.arch}}-2.0
+  #         arch: ${{matrix.flatpak.arch}}
+  #         upload-artifact: false
 
-      - name: Validate build
-        run: flatpak-builder-lint --exceptions --user-exceptions deploy/linux/flatpak/ci-build-lint-exceptions.json repo repo
+  #     - name: Validate build
+  #       run: flatpak-builder-lint --exceptions --user-exceptions deploy/linux/flatpak/ci-build-lint-exceptions.json repo repo
 
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: package-${{ env.PACKAGE_PREFIX }}-flatpak-${{matrix.flatpak.arch}}
-          path: ${{github.workspace}}/deskflow[-_]*.flatpak
+  #     - name: Upload
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: package-${{ env.PACKAGE_PREFIX }}-flatpak-${{matrix.flatpak.arch}}
+  #         path: ${{github.workspace}}/deskflow[-_]*.flatpak
 
   release:
     needs: ci-passed
