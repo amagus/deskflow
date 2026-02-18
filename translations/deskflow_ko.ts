@@ -1151,14 +1151,6 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>환경설정</translation>
     </message>
     <message>
-        <source>&amp;Regular</source>
-        <translation>일반(&amp;R)</translation>
-    </message>
-    <message>
-        <source>App</source>
-        <translation>앱</translation>
-    </message>
-    <message>
         <source>Check for updates on startup</source>
         <translation>시작 시 업데이트 확인</translation>
     </message>
@@ -1211,20 +1203,12 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>고급(&amp;A)</translation>
     </message>
     <message>
-        <source>Networking</source>
-        <translation>네트워크</translation>
-    </message>
-    <message>
         <source>Port</source>
         <translation>포트</translation>
     </message>
     <message>
         <source>Network IP</source>
         <translation>네트워크 IP</translation>
-    </message>
-    <message>
-        <source>Logs</source>
-        <translation>로그</translation>
     </message>
     <message>
         <source>Level</source>
@@ -1265,10 +1249,6 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Log path</source>
         <translation>로그 경로</translation>
-    </message>
-    <message>
-        <source>Log to file</source>
-        <translation>파일로 로그 저장</translation>
     </message>
     <message>
         <source>Using a Debug log level may affect performance. Only use a Debug level if you are attempting to debug an issue or are gathering logs to submit with a bug report.</source>
@@ -1343,6 +1323,22 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>상세 디버그 출력</translation>
     </message>
     <message>
+        <source>Close and save changes</source>
+        <translation type="unfinished">닫기 및 변경 사항 저장</translation>
+    </message>
+    <message>
+        <source>Close and forget changes</source>
+        <translation type="unfinished">설정을 저장하고 나면 변경 사항은 더 이상 신경 쓸 필요가 없습니다</translation>
+    </message>
+    <message>
+        <source>Reset to stored values</source>
+        <translation type="unfinished">저장된 값으로 재설정</translation>
+    </message>
+    <message>
+        <source>Reset to default values</source>
+        <translation type="unfinished">기본값으로 재설정</translation>
+    </message>
+    <message>
         <source>Enable wl-clipboard support</source>
         <translation>wl-clipboard 지원 사용</translation>
     </message>
@@ -1357,6 +1353,22 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Include version in the window title</source>
         <translation type="unfinished">창 제목에 버전 정보 포함</translation>
+    </message>
+    <message>
+        <source>Log to file</source>
+        <translation>파일로 로그 저장</translation>
+    </message>
+    <message>
+        <source>&amp;Logs</source>
+        <translation>로그 (&amp;L)</translation>
+    </message>
+    <message>
+        <source>&amp;General</source>
+        <translation type="unfinished">일반적인 (&amp;G)</translation>
+    </message>
+    <message>
+        <source>&amp;Network</source>
+        <translation>네트워크(&amp;N)</translation>
     </message>
 </context>
 <context>

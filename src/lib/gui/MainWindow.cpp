@@ -141,8 +141,6 @@ MainWindow::MainWindow()
   connectSlots();
   setupTrayIcon();
   updateScreenName();
-  applyConfig();
-  restoreWindow();
 
   qDebug().noquote() << "active settings path:" << Settings::settingsPath();
 
@@ -161,6 +159,9 @@ MainWindow::MainWindow()
       m_fingerprint = {QCryptographicHash::Sha256, TlsUtility::certFingerprint()};
     }
   }
+
+  applyConfig();
+  restoreWindow();
 }
 MainWindow::~MainWindow()
 {
@@ -499,7 +500,7 @@ void MainWindow::openGetNewVersionUrl() const
 
 void MainWindow::openSettings()
 {
-  auto dialog = SettingsDialog(this, m_serverConfig, m_coreProcess);
+  auto dialog = SettingsDialog(this, m_serverConfig);
 
   if (dialog.exec() == QDialog::Accepted) {
     Settings::save();

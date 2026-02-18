@@ -1151,14 +1151,6 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>Настройки</translation>
     </message>
     <message>
-        <source>&amp;Regular</source>
-        <translation>&amp;Основные</translation>
-    </message>
-    <message>
-        <source>App</source>
-        <translation>Приложение</translation>
-    </message>
-    <message>
         <source>Check for updates on startup</source>
         <translation>Проверять обновления при запуске</translation>
     </message>
@@ -1211,20 +1203,12 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>&amp;Расширенные</translation>
     </message>
     <message>
-        <source>Networking</source>
-        <translation>Сеть</translation>
-    </message>
-    <message>
         <source>Port</source>
         <translation>Порт</translation>
     </message>
     <message>
         <source>Network IP</source>
         <translation>Сетевой IP-адрес</translation>
-    </message>
-    <message>
-        <source>Logs</source>
-        <translation>Журналы</translation>
     </message>
     <message>
         <source>Level</source>
@@ -1265,10 +1249,6 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Log path</source>
         <translation>Путь к журналам</translation>
-    </message>
-    <message>
-        <source>Log to file</source>
-        <translation>Записывать в файл</translation>
     </message>
     <message>
         <source>Using a Debug log level may affect performance. Only use a Debug level if you are attempting to debug an issue or are gathering logs to submit with a bug report.</source>
@@ -1347,6 +1327,22 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>Подробный вывод отладки</translation>
     </message>
     <message>
+        <source>Close and save changes</source>
+        <translation type="unfinished">Закрыть и сохранить изменения</translation>
+    </message>
+    <message>
+        <source>Close and forget changes</source>
+        <translation type="unfinished">Закройте изменения и забудьте о них</translation>
+    </message>
+    <message>
+        <source>Reset to stored values</source>
+        <translation type="unfinished">Сбросить до сохраненных значений</translation>
+    </message>
+    <message>
+        <source>Reset to default values</source>
+        <translation type="unfinished">Сбросить до значений по умолчанию</translation>
+    </message>
+    <message>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Requires the wl-clipboard package&lt;/p&gt;&lt;p&gt;When using wl-clipboard v2.2.1, there is a focus stealing bug that may make Deskflow harder to use. This has been fixed when using the wl-clipboard master branch, unless your Compositor lacks wlroots-data-control protocol support.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Требуется пакет wl-clipboard. В версии 2.2.1 есть ошибка перехвата фокуса.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -1357,6 +1353,22 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Include version in the window title</source>
         <translation type="unfinished">Включить номер версии в заголовок окна</translation>
+    </message>
+    <message>
+        <source>Log to file</source>
+        <translation>Записывать в файл</translation>
+    </message>
+    <message>
+        <source>&amp;Logs</source>
+        <translation>&amp;Журнал</translation>
+    </message>
+    <message>
+        <source>&amp;General</source>
+        <translation type="unfinished">&amp;Общий</translation>
+    </message>
+    <message>
+        <source>&amp;Network</source>
+        <translation>&amp;Сеть</translation>
     </message>
 </context>
 <context>

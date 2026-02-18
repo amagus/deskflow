@@ -1152,14 +1152,6 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
         <translation type="unfinished">Preferencias</translation>
     </message>
     <message>
-        <source>&amp;Regular</source>
-        <translation type="unfinished">&amp;Regular</translation>
-    </message>
-    <message>
-        <source>App</source>
-        <translation type="unfinished">Aplicación</translation>
-    </message>
-    <message>
         <source>Check for updates on startup</source>
         <translation type="unfinished">Buscar actualizaciones al iniciar</translation>
     </message>
@@ -1212,10 +1204,6 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
         <translation type="unfinished">&amp;Avanzado</translation>
     </message>
     <message>
-        <source>Networking</source>
-        <translation type="unfinished">Redes</translation>
-    </message>
-    <message>
         <source>Port</source>
         <translation type="unfinished">Puerto</translation>
     </message>
@@ -1224,16 +1212,8 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
         <translation type="unfinished">IP de red</translation>
     </message>
     <message>
-        <source>Logs</source>
-        <translation type="unfinished">Registros</translation>
-    </message>
-    <message>
         <source>Log path</source>
         <translation type="unfinished">Ruta de registro</translation>
-    </message>
-    <message>
-        <source>Log to file</source>
-        <translation type="unfinished">Registrar en archivo</translation>
     </message>
     <message>
         <source>Fatal</source>
@@ -1316,6 +1296,22 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
         <translation type="unfinished">Salida de depuración detallada</translation>
     </message>
     <message>
+        <source>Close and save changes</source>
+        <translation type="unfinished">Cerrar y guardar los cambios</translation>
+    </message>
+    <message>
+        <source>Close and forget changes</source>
+        <translation type="unfinished">Cerrar y olvidar los cambios</translation>
+    </message>
+    <message>
+        <source>Reset to stored values</source>
+        <translation type="unfinished">Restablecer los valores almacenados</translation>
+    </message>
+    <message>
+        <source>Reset to default values</source>
+        <translation type="unfinished">Restablecer valores predeterminados</translation>
+    </message>
+    <message>
         <source>TLS Certificate Regenerated</source>
         <translation type="unfinished">Certificado TLS regenerado</translation>
     </message>
@@ -1358,6 +1354,22 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
     <message>
         <source>Include version in the window title</source>
         <translation type="unfinished">Incluir la versión en el título de la ventana</translation>
+    </message>
+    <message>
+        <source>Log to file</source>
+        <translation>Registrar en archivo</translation>
+    </message>
+    <message>
+        <source>&amp;Logs</source>
+        <translation>&amp;Registro</translation>
+    </message>
+    <message>
+        <source>&amp;General</source>
+        <translation type="unfinished">&amp;General</translation>
+    </message>
+    <message>
+        <source>&amp;Network</source>
+        <translation>R&amp;ed</translation>
     </message>
 </context>
 <context>

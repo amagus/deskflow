@@ -1152,14 +1152,6 @@ L&apos;abilitazione di questa impostazione disabiliterà l&apos;interfaccia graf
         <translation>Preferenze</translation>
     </message>
     <message>
-        <source>&amp;Regular</source>
-        <translation>&amp;Regolare</translation>
-    </message>
-    <message>
-        <source>App</source>
-        <translation>App</translation>
-    </message>
-    <message>
         <source>Check for updates on startup</source>
         <translation>Controlla aggiornamenti all&apos;avvio</translation>
     </message>
@@ -1212,10 +1204,6 @@ L&apos;abilitazione di questa impostazione disabiliterà l&apos;interfaccia graf
         <translation>&amp;Avanzate</translation>
     </message>
     <message>
-        <source>Networking</source>
-        <translation>Rete</translation>
-    </message>
-    <message>
         <source>Port</source>
         <translation>Porta</translation>
     </message>
@@ -1224,16 +1212,8 @@ L&apos;abilitazione di questa impostazione disabiliterà l&apos;interfaccia graf
         <translation>IP di rete</translation>
     </message>
     <message>
-        <source>Logs</source>
-        <translation>Log</translation>
-    </message>
-    <message>
         <source>Log path</source>
         <translation>Percorso log</translation>
-    </message>
-    <message>
-        <source>Log to file</source>
-        <translation>Salva log su file</translation>
     </message>
     <message>
         <source>Fatal</source>
@@ -1316,6 +1296,22 @@ L&apos;abilitazione di questa impostazione disabiliterà l&apos;interfaccia graf
         <translation>Output di debug dettagliato</translation>
     </message>
     <message>
+        <source>Close and save changes</source>
+        <translation type="unfinished">Chiudi e salva le modifiche</translation>
+    </message>
+    <message>
+        <source>Close and forget changes</source>
+        <translation type="unfinished">Chiudi e dimentica le modifiche</translation>
+    </message>
+    <message>
+        <source>Reset to stored values</source>
+        <translation type="unfinished">Ripristina i valori memorizzati</translation>
+    </message>
+    <message>
+        <source>Reset to default values</source>
+        <translation type="unfinished">Ripristina i valori predefiniti</translation>
+    </message>
+    <message>
         <source>TLS Certificate Regenerated</source>
         <translation>Certificato TLS rigenerato</translation>
     </message>
@@ -1358,6 +1354,22 @@ L&apos;abilitazione di questa impostazione disabiliterà l&apos;interfaccia graf
     <message>
         <source>Include version in the window title</source>
         <translation type="unfinished">Includi la versione nel titolo della finestra</translation>
+    </message>
+    <message>
+        <source>Log to file</source>
+        <translation>Salva log su file</translation>
+    </message>
+    <message>
+        <source>&amp;Logs</source>
+        <translation>&amp;Logs</translation>
+    </message>
+    <message>
+        <source>&amp;General</source>
+        <translation type="unfinished">&amp;Generale</translation>
+    </message>
+    <message>
+        <source>&amp;Network</source>
+        <translation>&amp;Rete</translation>
     </message>
 </context>
 <context>

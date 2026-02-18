@@ -175,7 +175,7 @@ p, li { white-space: pre-wrap; }
     </message>
     <message>
         <source>Close and forget changes</source>
-        <translation type="unfinished">关闭并忘记更改</translation>
+        <translation>关闭并放弃修改</translation>
     </message>
     <message>
         <source>Reset to stored values</source>
@@ -1153,14 +1153,6 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>首选项</translation>
     </message>
     <message>
-        <source>&amp;Regular</source>
-        <translation>常规(&amp;R)</translation>
-    </message>
-    <message>
-        <source>App</source>
-        <translation>应用程序</translation>
-    </message>
-    <message>
         <source>Check for updates on startup</source>
         <translation>启动时检查更新</translation>
     </message>
@@ -1213,20 +1205,12 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>高级(&amp;A)</translation>
     </message>
     <message>
-        <source>Networking</source>
-        <translation>网络</translation>
-    </message>
-    <message>
         <source>Port</source>
         <translation>端口</translation>
     </message>
     <message>
         <source>Network IP</source>
         <translation>网络 IP</translation>
-    </message>
-    <message>
-        <source>Logs</source>
-        <translation>日志</translation>
     </message>
     <message>
         <source>Level</source>
@@ -1267,10 +1251,6 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Log path</source>
         <translation>日志路径</translation>
-    </message>
-    <message>
-        <source>Log to file</source>
-        <translation>记录日志到文件</translation>
     </message>
     <message>
         <source>Using a Debug log level may affect performance. Only use a Debug level if you are attempting to debug an issue or are gathering logs to submit with a bug report.</source>
@@ -1345,6 +1325,22 @@ Enabling this setting will disable the server config GUI.</source>
         <translation>详细调试输出</translation>
     </message>
     <message>
+        <source>Close and save changes</source>
+        <translation type="unfinished">关闭并保存更改</translation>
+    </message>
+    <message>
+        <source>Close and forget changes</source>
+        <translation>关闭并放弃修改</translation>
+    </message>
+    <message>
+        <source>Reset to stored values</source>
+        <translation type="unfinished">重置为存储值</translation>
+    </message>
+    <message>
+        <source>Reset to default values</source>
+        <translation type="unfinished">重置为默认值</translation>
+    </message>
+    <message>
         <source>Enable wl-clipboard support</source>
         <translation>启用 wl-clipboard 支持</translation>
     </message>
@@ -1359,6 +1355,22 @@ Enabling this setting will disable the server config GUI.</source>
     <message>
         <source>Include version in the window title</source>
         <translation type="unfinished">在窗口标题中包含版本信息</translation>
+    </message>
+    <message>
+        <source>Log to file</source>
+        <translation>记录日志到文件</translation>
+    </message>
+    <message>
+        <source>&amp;Logs</source>
+        <translation type="unfinished">日志(&amp;L)</translation>
+    </message>
+    <message>
+        <source>&amp;General</source>
+        <translation>常规(&amp;G)</translation>
+    </message>
+    <message>
+        <source>&amp;Network</source>
+        <translation>网络(&amp;N)</translation>
     </message>
 </context>
 <context>
