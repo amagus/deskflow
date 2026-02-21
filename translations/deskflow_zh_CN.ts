@@ -539,6 +539,16 @@ Valid names:
         <source>&lt;html&gt;Hostname or IP address of the server computer.&lt;br/&gt;May contain a comma seperated list.&lt;/html&gt;</source>
         <translation type="unfinished">&lt;html&gt;服务器计算机的主机名或 IP 地址。&lt;br/&gt;可以包含以逗号分隔的列表。&lt;/html&gt;</translation>
     </message>
+    <message>
+        <source>Insufficient permissions</source>
+        <translation type="unfinished">权限不足</translation>
+    </message>
+    <message>
+        <source>Lacking correct permissions to access server configuration at &quot;%1&quot;.
+Please check that you have the right permissions to this file.</source>
+        <translation type="unfinished">缺少访问“%1”处服务器配置的正确权限。
+请检查您是否拥有访问此文件的正确权限。</translation>
+    </message>
 </context>
 <context>
     <name>NewScreenWidget</name>

@@ -389,6 +389,14 @@ void MainWindow::coreProcessError(CoreProcess::Error error)
            "although it does exist. "
            "Please check if you have sufficient permissions to run this program.")
     );
+  } else if (error == CoreProcess::Error::InsufficientServerConfigPermissions) {
+    show();
+    QMessageBox::warning(
+        this, tr("Insufficient permissions"),
+        tr("Lacking correct permissions to access server configuration at \"%1\".\n"
+           "Please check that you have the right permissions to this file.")
+            .arg(qPrintable(Settings::serverConfigFile()))
+    );
   }
 }
 
@@ -905,6 +913,7 @@ void MainWindow::coreProcessStateChanged(ProcessState state)
     m_actionRestartCore->setVisible(false);
     m_actionStopCore->setEnabled(false);
   }
+
   updateModeControlLabels();
 }
 

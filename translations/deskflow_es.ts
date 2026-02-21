@@ -539,6 +539,16 @@ Nombres válidos:
         <source>&lt;html&gt;Hostname or IP address of the server computer.&lt;br/&gt;May contain a comma seperated list.&lt;/html&gt;</source>
         <translation type="unfinished">&lt;html&gt;Nome host o indirizzo IP del computer server.&lt;br/&gt;Può contenere un elenco separato da virgole.&lt;/html&gt;</translation>
     </message>
+    <message>
+        <source>Insufficient permissions</source>
+        <translation type="unfinished">Permisos insuficientes</translation>
+    </message>
+    <message>
+        <source>Lacking correct permissions to access server configuration at &quot;%1&quot;.
+Please check that you have the right permissions to this file.</source>
+        <translation type="unfinished">No se tienen los permisos correctos para acceder a la configuración del servidor en &quot;%1&quot;.
+Verifique que tenga los permisos correctos para este archivo.</translation>
+    </message>
 </context>
 <context>
     <name>NewScreenWidget</name>

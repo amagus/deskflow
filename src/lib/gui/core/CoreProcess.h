@@ -36,7 +36,8 @@ public:
   enum class Error
   {
     AddressMissing,
-    StartFailed
+    StartFailed,
+    InsufficientServerConfigPermissions
   };
 
   explicit CoreProcess(const IServerConfig &serverConfig);
@@ -101,7 +102,7 @@ private:
   void startProcessFromDaemon(const QStringList &args);
   void stopForegroundProcess() const;
   void stopProcessFromDaemon();
-  QString persistServerConfig() const;
+  QPair<bool, QString> persistServerConfig() const;
   void setConnectionState(ConnectionState state);
   void setProcessState(ProcessState state);
   void checkLogLine(const QString &line);

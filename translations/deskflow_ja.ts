@@ -539,6 +539,16 @@ Valid names:
         <source>&lt;html&gt;Hostname or IP address of the server computer.&lt;br/&gt;May contain a comma seperated list.&lt;/html&gt;</source>
         <translation>&lt;html&gt;サーバーコンピューターのホスト名または IP アドレス。&lt;br/&gt;カンマ区切りのリストを含めることができます。&lt;/html&gt;</translation>
     </message>
+    <message>
+        <source>Insufficient permissions</source>
+        <translation type="unfinished">権限が不十分です</translation>
+    </message>
+    <message>
+        <source>Lacking correct permissions to access server configuration at &quot;%1&quot;.
+Please check that you have the right permissions to this file.</source>
+        <translation type="unfinished">「%1」のサーバー構成にアクセスするための正しい権限がありません。
+このファイルに対する適切な権限があることを確認してください。</translation>
+    </message>
 </context>
 <context>
     <name>NewScreenWidget</name>

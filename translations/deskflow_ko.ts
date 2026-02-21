@@ -539,6 +539,16 @@ Valid names:
         <source>&lt;html&gt;Hostname or IP address of the server computer.&lt;br/&gt;May contain a comma seperated list.&lt;/html&gt;</source>
         <translation>&lt;html&gt;서버 컴퓨터의 호스트 이름 또는 IP 주소입니다.&lt;br/&gt;목록 요소는 쉼표로 구분됩니다.&lt;/html&gt;</translation>
     </message>
+    <message>
+        <source>Insufficient permissions</source>
+        <translation type="unfinished">권한이 부족합니다</translation>
+    </message>
+    <message>
+        <source>Lacking correct permissions to access server configuration at &quot;%1&quot;.
+Please check that you have the right permissions to this file.</source>
+        <translation type="unfinished">&quot;%1&quot;에 있는 서버 구성 파일에 접근할 권한이 없습니다.
+해당 파일에 대한 올바른 권한이 있는지 확인하십시오.</translation>
+    </message>
 </context>
 <context>
     <name>NewScreenWidget</name>

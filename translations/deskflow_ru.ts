@@ -539,6 +539,16 @@ Valid names:
         <source>&lt;html&gt;Hostname or IP address of the server computer.&lt;br/&gt;May contain a comma seperated list.&lt;/html&gt;</source>
         <translation type="unfinished">&lt;html&gt;Имя хоста или IP-адрес серверного компьютера.&lt;br/&gt;Может содержать список, разделенный запятыми.&lt;/html&gt;</translation>
     </message>
+    <message>
+        <source>Insufficient permissions</source>
+        <translation type="unfinished">Недостаточные права доступа</translation>
+    </message>
+    <message>
+        <source>Lacking correct permissions to access server configuration at &quot;%1&quot;.
+Please check that you have the right permissions to this file.</source>
+        <translation type="unfinished">Отсутствуют корректные права доступа к конфигурации сервера по адресу &quot;%1&quot;.
+Пожалуйста, убедитесь, что у вас есть необходимые права доступа к этому файлу.</translation>
+    </message>
 </context>
 <context>
     <name>NewScreenWidget</name>
