@@ -914,7 +914,7 @@ void MSWindowsKeyState::getKeyMap(deskflow::KeyMap &keyMap)
         break;
 
       case VK_MENU:
-        vk = VK_LMENU;
+        vk = VK_RMENU;
         break;
 
       case VK_NUMLOCK:
