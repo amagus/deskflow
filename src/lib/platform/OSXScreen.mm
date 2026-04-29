@@ -1072,8 +1072,10 @@ bool OSXScreen::onMouseMove()
     if (m_preventHoverWindowState == EPreventHoverWindowState::JustShown) {
       m_preventHoverWindowState = EPreventHoverWindowState::WaitingForWarp;
       dispatch_after(dispatch_time(DISPATCH_TIME_NOW, kPreventHoverDelayToWarp), dispatch_get_main_queue(), ^{
-        warpCursor(m_xCenter, m_yCenter);
-        m_preventHoverWindowState = EPreventHoverWindowState::Displayed;
+        if (!m_isOnScreen) {
+          warpCursor(m_xCenter, m_yCenter);
+          m_preventHoverWindowState = EPreventHoverWindowState::Displayed;
+        }
       });
     } else if (m_preventHoverWindowState != EPreventHoverWindowState::WaitingForWarp) {
       warpCursor(m_xCenter, m_yCenter);
