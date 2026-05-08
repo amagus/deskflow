@@ -12,12 +12,11 @@
 #if WINAPI_XWINDOWS
 #include "deskflow/unix/X11LayoutsParser.h"
 #include <X11/XKBlib.h>
+#include <filesystem>
 #elif defined(Q_OS_MAC)
 #include <Carbon/Carbon.h>
 #include <platform/OSXAutoTypes.h>
 #endif
-
-#include <filesystem>
 
 AppUtilUnix::AppUtilUnix(const IEventQueue *)
 {
