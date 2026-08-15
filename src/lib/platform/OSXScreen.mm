@@ -1237,7 +1237,7 @@ bool OSXScreen::onHotKey(EventRef event) const
   return true;
 }
 
-ButtonID OSXScreen::mapDeskflowButtonToMac(uint16_t button) const
+ButtonID OSXScreen::mapDeskflowButtonToMac(uint16_t button)
 {
   switch (button) {
   case 1:
@@ -1255,7 +1255,7 @@ ButtonID OSXScreen::mapDeskflowButtonToMac(uint16_t button) const
   }
 }
 
-ButtonID OSXScreen::mapMacButtonToDeskflow(uint16_t macButton) const
+ButtonID OSXScreen::mapMacButtonToDeskflow(uint16_t macButton)
 {
   switch (macButton) {
   case 1:
