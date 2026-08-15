@@ -132,10 +132,10 @@ private:
   void hideCursor();
 
   // map deskflow mouse button to mac buttons
-  ButtonID mapDeskflowButtonToMac(uint16_t) const;
+  static ButtonID mapDeskflowButtonToMac(uint16_t);
 
   // map mac mouse button to deskflow buttons
-  ButtonID mapMacButtonToDeskflow(uint16_t) const;
+  static ButtonID mapMacButtonToDeskflow(uint16_t);
 
   // map mac scroll wheel value to a deskflow scroll wheel value
   int32_t mapScrollWheelToDeskflow(int32_t) const;
