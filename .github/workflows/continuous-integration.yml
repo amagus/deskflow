@@ -123,11 +123,11 @@ jobs:
             qt-version: 6.11.1
             config-args: '-DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=14'
 
-          # - name: "macos-x64"
-          #   runs-on: macos-15-intel
-          #   timeout: 20
-          #   qt-version: 6.9.3
-          #   config-args: '-DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=12 -DCMAKE_OSX_SYSROOT=/Applications/Xcode_16.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
+          - name: "macos-x64"
+            runs-on: macos-15-intel
+            timeout: 20
+            qt-version: 6.9.3
+            config-args: '-DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=12 -DCMAKE_OSX_SYSROOT=/Applications/Xcode_16.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
 
           # - name: "debian-x86_64"
           #   runs-on: ubuntu-latest
@@ -234,12 +234,12 @@ jobs:
           #   timeout: 20
           #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
 
-          - name: "ubuntu-devel-arm64"
-            runs-on: ubuntu-24.04-arm
-            container: ubuntu:devel
-            like: "debian"
-            timeout: 20
-            config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
+          # - name: "ubuntu-devel-arm64"
+          #   runs-on: ubuntu-24.04-arm
+          #   container: ubuntu:devel
+          #   like: "debian"
+          #   timeout: 20
+          #   config-args: "-G Ninja -DCMAKE_INSTALL_PREFIX=/usr"
     steps:
       # Make sure the container has git before we do anything else
       - name: Install Git on Container
